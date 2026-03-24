@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace UFG - Universidad Francisco Gavidia</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Pantalla de Login/Registro -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Marketplace UFG</h1>
+                <p>Conectando emprendedores universitarios</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <div id="login-form" class="auth-form">
+                <h2>Iniciar Sesión</h2>
+                <form>
+                    <div class="form-group">
+                        <label for="login-email">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="login-email" 
+                            placeholder="ejemplo@ufg.edu.sv"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="login-password" 
+                            placeholder="••••••••"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        Iniciar Sesión
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    ¿No tienes cuenta? 
+                    <a href="#" id="link-to-register">Regístrate aquí</a>
+                </p>
+            </div>
+
+            <!-- Formulario de Registro -->
+            <div id="register-form" class="auth-form" style="display: none;">
+                <h2>Crear Cuenta</h2>
+                <form>
+                    <div class="form-group">
+                        <label for="register-nombre">Nombre Completo</label>
+                        <input 
+                            type="text" 
+                            id="register-nombre" 
+                            placeholder="Juan Pérez"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="register-email" 
+                            placeholder="ejemplo@ufg.edu.sv"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="register-password" 
+                            placeholder="Mínimo 6 caracteres"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password-confirm">Confirmar Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="register-password-confirm" 
+                            placeholder="Repite tu contraseña"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        Crear Cuenta
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    ¿Ya tienes cuenta? 
+                    <a href="#" id="link-to-login">Inicia sesión aquí</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicación Principal -->
+    <div id="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="logo">
+                    <h1>🎓 Marketplace UFG</h1>
+                    <p class="tagline">Conectando emprendedores universitarios</p>
+                </div>
+                <nav class="nav">
+                    <button class="btn-secondary" id="nav-productos">
+                        🛍️ Productos
+                    </button>
+                    <button class="btn-secondary" id="nav-vendedor">
+                        📦 Vender
+                    </button>
+                    <button class="btn-secondary" id="nav-mensajes">
+                        💬 Chats
+                        <span id="badge-mensajes" class="badge">0</span>
+                    </button>
+                    <div class="user-menu">
+                        <span class="user-name" id="user-name">👤 Usuario</span>
+                        <button class="btn-logout" onclick="window.app.controllers.auth.logout()">
+                            🚪 Salir
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Vista de Productos -->
+        <main class="main-content" id="vista-productos">
+            <div class="container">
+                <div class="search-section">
+                    <div class="category-filters" id="category-filters">
+                        <!-- Filtros de categoría se cargan dinámicamente -->
+                    </div>
+                    <div class="search-bar">
+                        <input 
+                            type="text" 
+                            id="buscar-producto" 
+                            placeholder="🔍 Buscar producto por nombre..."
+                        >
+                    </div>
+                    <p class="results-count" id="results-count">Mostrando todos los productos</p>
+                </div>
+
+                <div class="productos-grid" id="productos-grid">
+                    <!-- Productos se cargan dinámicamente -->
+                </div>
+
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <h3>📭 No se encontraron productos</h3>
+                    <p>Intenta con otra búsqueda o sé el primero en publicar un producto</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Vista de Vendedor -->
+        <section class="main-content" id="vista-vendedor" style="display: none;">
+            <div class="container">
+                <div class="panel-vendedor">
+                    <h2>📦 Publicar Producto</h2>
+                    <p class="subtitle">Completa la información de tu producto</p>
+
+                    <form id="form-producto">
+                        <div class="form-group">
+                            <label for="nombre-producto">Nombre del Producto *</label>
+                            <input 
+                                type="text" 
+                                id="nombre-producto" 
+                                placeholder="Ej: Laptop Dell Inspiron 15"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categoria-producto">Categoría *</label>
+                            <select id="categoria-producto" required>
+                                <option value="">Selecciona una categoría</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="precio-producto">Precio (USD) *</label>
+                            <input 
+                                type="number" 
+                                id="precio-producto" 
+                                placeholder="0.00"
+                                step="0.01"
+                                min="0"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion-producto">Descripción *</label>
+                            <textarea 
+                                id="descripcion-producto" 
+                                rows="5"
+                                placeholder="Describe tu producto: características, condición, etc."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="imagen-producto">Imagen del Producto</label>
+                            <input 
+                                type="file" 
+                                id="imagen-producto" 
+                                accept="image/*"
+                            >
+                            <div id="preview-container" class="preview-container" style="display: none;">
+                                <img id="preview-imagen" alt="Preview">
+                                <button type="button" class="btn-remove" onclick="window.app.controllers.products.clearImage()">✕</button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                ✓ Publicar Producto
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="window.app.controllers.products.clearForm()">
+                                ↺ Limpiar
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mis-productos" id="mis-productos">
+                        <h3>Mis Productos Publicados</h3>
+                        <div id="lista-mis-productos" class="productos-list">
+                            <p class="empty-message">Aún no has publicado ningún producto</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista de Mensajes/Chat -->
+        <section class="main-content" id="vista-mensajes" style="display: none;">
+            <div class="container">
+                <div class="chat-container">
+                    <div class="chat-sidebar">
+                        <div class="chat-sidebar-header">
+                            <h3>💬 Conversaciones</h3>
+                        </div>
+                        <div id="lista-conversaciones" class="conversaciones-list">
+                            <p class="empty-message">No tienes conversaciones aún</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-main">
+                        <div id="chat-empty" class="chat-empty">
+                            <div class="chat-empty-content">
+                                <h3>💬</h3>
+                                <p>Selecciona una conversación para comenzar a chatear</p>
+                            </div>
+                        </div>
+
+                        <div id="chat-activo" class="chat-activo" style="display: none;">
+                            <div class="chat-header">
+                                <div class="chat-header-info">
+                                    <h3 id="chat-titulo">Producto</h3>
+                                    <p id="chat-subtitulo">Conversación con usuario</p>
+                                </div>
+                                <button class="btn-close-chat" onclick="window.app.controllers.chat.closeChat()">✕</button>
+                            </div>
+
+                            <div id="chat-mensajes" class="chat-mensajes">
+                                <!-- Mensajes se cargan dinámicamente -->
+                            </div>
+
+                            <div class="chat-input-container">
+                                <form id="form-enviar-mensaje">
+                                    <input 
+                                        type="text" 
+                                        id="chat-input" 
+                                        placeholder="Escribe tu mensaje..."
+                                        required
+                                    >
+                                    <button type="submit" class="btn-send">
+                                        ➤
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de Detalle del Producto -->
+    <div id="modal-detalle" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="window.app.controllers.products.closeModal()">&times;</span>
+            <div id="detalle-producto">
+                <!-- Contenido se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="src/app.js"></script>
+</body>
+</html>
