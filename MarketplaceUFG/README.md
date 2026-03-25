@@ -1,23 +1,19 @@
-# 🎓 Marketplace UFG
+# Marketplace UFG
 
 **Conectando emprendedores universitarios**
 
 Una aplicación web para que los estudiantes de la Universidad Francisco Gavidia puedan comprar y vender productos entre ellos.
 
----
-
-## 📋 ¿Qué es Marketplace UFG?
+## ¿Qué es Marketplace UFG?
 
 Marketplace UFG es una plataforma diseñada exclusivamente para la comunidad universitaria de la UFG, donde los estudiantes pueden:
 
-- 🛍️ **Publicar productos** para vender (libros, electrónicos, materiales de estudio, etc.)
-- 🔍 **Buscar y comprar** productos de otros estudiantes
-- 💬 **Chatear** directamente con vendedores/compradores
-- 📱 **Acceder desde cualquier dispositivo** (computadora, tablet o celular)
+- **Publicar productos** para vender (libros, electrónicos, materiales de estudio, etc.)
+- **Buscar y comprar** productos de otros estudiantes
+- **Chatear** directamente con vendedores/compradores
+- **Acceder desde cualquier dispositivo** (computadora, tablet o celular)
 
----
-
-## 🚀 Cómo ejecutar la aplicación
+## Cómo ejecutar la aplicación
 
 ### Opción 1: Con Python (Recomendado)
 
@@ -45,7 +41,7 @@ Instala la extensión **"Live Server"** y haz clic derecho en `index.html` → "
 
 ---
 
-## 📖 Guía de uso
+## Guía de uso
 
 ### 1. Crear una cuenta
 
@@ -69,18 +65,18 @@ Para comenzar a usar Marketplace UFG necesitas crear una cuenta de usuario. Sigu
 
 6. **Inicia sesión** con tu correo y contraseña recién creados
 
-#### ⚠️ Importante:
+#### Importante:
 - **El correo debe ser único**: No puedes usar un email que ya esté registrado
 - **Las contraseñas deben coincidir**: Si no coinciden, aparecerá un mensaje de error
 - **Contraseña segura**: Usa al menos 6 caracteres (letras y números recomendados)
 - **Datos reales**: Usa tu nombre real para que otros estudiantes puedan identificarte
 
-#### 🔐 Consejos de seguridad:
+#### Consejos de seguridad:
 - No compartas tu contraseña con nadie
 - Usa una contraseña diferente a la de tu correo institucional
 - Recuerda que los datos se guardan localmente en tu navegador
 
-#### ❓ ¿Problemas para registrarte?
+#### ¿Problemas para registrarte?
 - **"Este correo ya está registrado"**: Usa otro email o recupera tu cuenta si ya te habías registrado
 - **"Las contraseñas no coinciden"**: Verifica que escribiste exactamente lo mismo en ambos campos
 - **El botón no funciona**: Asegúrate de llenar todos los campos obligatorios (marcados con *)
@@ -91,7 +87,7 @@ Para comenzar a usar Marketplace UFG necesitas crear una cuenta de usuario. Sigu
 - Haz clic en cualquier producto para ver más detalles
 
 ### 3. Publicar un producto
-- Ve a la pestaña "📦 Vender"
+- Ve a la pestaña "Vender"
 - Completa el formulario con:
   - Nombre del producto
   - Precio en dólares
@@ -105,77 +101,77 @@ Para comenzar a usar Marketplace UFG necesitas crear una cuenta de usuario. Sigu
 - El vendedor recibirá tu mensaje y podrán chatear
 
 ### 5. Chats y mensajes
-- Ve a la pestaña "💬 Chats"
+- Ve a la pestaña "Chats"
 - Verás todas tus conversaciones activas
 - El número en rojo indica mensajes nuevos
 - Haz clic en una conversación para responder
 
 ### 6. Gestionar mis productos
-- En la pestaña "📦 Vender" verás tus productos publicados
+- En la pestaña "Vender" verás tus productos publicados
 - Puedes eliminar productos que ya no quieras vender
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 MarketplaceUFG/
 │
-├── 📄 index.html              ← Página principal (abre esta)
-├── 📄 styles.css              ← Estilos visuales
-├── 📄 README.md               ← Este archivo
+├── index.html              ← Página principal (abre esta)
+├── styles.css              ← Estilos visuales
+├── README.md               ← Este archivo
 │
-├── 📁 src/                    ← Código fuente
+├── src/                    ← Código fuente
 │   │
-│   ├── 📁 config/            ← Configuración
+│   ├── config/            ← Configuración
 │   │   ├── config.js
 │   │   ├── events.js
 │   │   └── messages.js
 │   │
-│   ├── 📁 core/              ← Lógica principal
+│   ├── core/              ← Lógica principal
 │   │   │
-│   │   ├── 📁 domain/        ← Modelos de datos
+│   │   ├── domain/        ← Modelos de datos
 │   │   │   ├── User.js      (Usuarios)
 │   │   │   ├── Product.js   (Productos)
 │   │   │   ├── Message.js   (Mensajes)
 │   │   │   └── Conversation.js (Conversaciones)
 │   │   │
-│   │   ├── 📁 repositories/  ← Almacenamiento de datos
+│   │   ├── repositories/  ← Almacenamiento de datos
 │   │   │   ├── UserRepository.js
 │   │   │   ├── ProductRepository.js
 │   │   │   ├── ConversationRepository.js
 │   │   │   └── SessionRepository.js
 │   │   │
-│   │   ├── 📁 services/      ← Funcionalidades principales
+│   │   ├── services/      ← Funcionalidades principales
 │   │   │   ├── AuthService.js    (Login/Registro)
 │   │   │   ├── ProductService.js (Gestión de productos)
 │   │   │   └── ChatService.js    (Sistema de chat)
 │   │   │
-│   │   └── 📁 utils/         ← Herramientas auxiliares
+│   │   └── utils/         ← Herramientas auxiliares
 │   │       ├── EventEmitter.js
 │   │       ├── ImageUtils.js
 │   │       ├── Validator.js
 │   │       ├── UIUtils.js
 │   │       └── ToastService.js
 │   │
-│   ├── 📁 features/          ← Funcionalidades de la interfaz
-│   │   ├── 📁 auth/
+│   ├── features/          ← Funcionalidades de la interfaz
+│   │   ├── auth/
 │   │   │   └── AuthController.js
-│   │   ├── 📁 products/
+│   │   ├── products/
 │   │   │   └── ProductController.js
-│   │   └── 📁 chat/
+│   │   └── chat/
 │   │       └── ChatController.js
 │   │
-│   └── 📄 app.js             ← Archivo principal que inicia todo
+│   └── app.js             ← Archivo principal que inicia todo
 │
-└── 📁 assets/                ← Imágenes y recursos
-    ├── 📁 images/
-    └── 📁 icons/
+└── assets/                ← Imágenes y recursos
+    ├── images/
+    └── icons/
 ```
 
 ---
 
-## 💾 Datos y Privacidad
+## Datos y Privacidad
 
 - Los datos se guardan **localmente** en tu navegador
 - Ninguna información se envía a servidores externos
@@ -186,7 +182,7 @@ MarketplaceUFG/
 
 ---
 
-## 🛠️ Requisitos técnicos
+## Requisitos técnicos
 
 - **Navegador**: Chrome, Firefox, Safari, Edge (últimas versiones)
 - **JavaScript**: Debe estar habilitado
@@ -194,7 +190,7 @@ MarketplaceUFG/
 
 ---
 
-## ⚠️ Notas importantes
+## Notas importantes
 
 - Los datos se almacenan en el navegador. Si borras el historial/caché, perderás:
   - Tu cuenta de usuario
@@ -204,7 +200,7 @@ MarketplaceUFG/
 
 ---
 
-## 👥 Créditos
+## Créditos
 
 **Proyecto académico**
 - Universidad: Universidad Francisco Gavidia (UFG)
@@ -216,6 +212,3 @@ MarketplaceUFG/
   3. Jenny Alejandra Vargas Alfaro - VA100624
   4. Gabriel Isaac Sorto Rivas - SR100224
   5. Kevin René Flores Martínez - FM100224
----
-
-**¡Gracias por usar Marketplace UFG! 🎓**
