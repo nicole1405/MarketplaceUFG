@@ -1,6 +1,7 @@
 /**
  * Servicio de Productos
  * Encapsula toda la lógica de negocio relacionada con productos
+ * Productos, filtro de productos y la validacion
  */
 
 import { Product } from '../domain/Product.js';

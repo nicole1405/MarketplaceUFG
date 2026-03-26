@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- En este archivo tenemos el login, productos, vendedores, chat 
+     boton de modo claro o oscuro, formulario de la publicación y chat. IDs-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marketplace UFG - Universidad Francisco Gavidia</title>
@@ -122,12 +124,15 @@
                         <span id="badge-mensajes" class="badge">0</span>
                     </button>
                     <div class="user-menu">
-                        <span class="user-name" id="user-name">👤 Usuario</span>
+                        <span class="user-name" id="user-name">Usuario</span>
                         <button class="btn-logout" onclick="window.app.controllers.auth.logout()">
                             Salir
                         </button>
                     </div>
                 </nav>
+                <button class="btn-secondary theme-toggle" id="theme-toggle" type="button" aria-label="Cambiar tema">
+                    <span class="theme-icon"></span>
+                </button>
             </div>
         </header>
 
@@ -234,6 +239,9 @@
 
                     <div class="mis-productos" id="mis-productos">
                         <h3>Mis Productos Publicados</h3>
+                        <button type="button" id="btn-clear-no-image" class="btn-secondary btn-small" style="margin-bottom: 1rem;">
+                            Eliminar mis publicaciones sin imagen
+                        </button>
                         <div id="lista-mis-productos" class="productos-list">
                             <p class="empty-message">Aún no has publicado ningún producto</p>
                         </div>

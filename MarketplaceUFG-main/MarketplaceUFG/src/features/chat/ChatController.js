@@ -191,6 +191,8 @@ export class ChatController {
         const result = await this.chatService.sendMessage(conversation.id, texto);
 
         if (result.success) {
+            // Actualizar la conversación en memoria con la versión actualizada
+            this.chatService.setActiveConversation(result.conversation);
             this.renderMessages();
             this.renderConversations();
             input.value = '';

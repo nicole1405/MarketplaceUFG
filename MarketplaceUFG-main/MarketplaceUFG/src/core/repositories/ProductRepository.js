@@ -1,6 +1,8 @@
 /**
  * Repository para Productos
  * Encapsula la lógica de persistencia de productos
+ * Aplica el principio de responsabilidad única (SRP) al encargarse solo de la gestión de productos
+ * CRUDRepository: Implementa métodos para crear, leer, actualizar y eliminar productos
  */
 
 import { IRepository } from './IRepository.js';

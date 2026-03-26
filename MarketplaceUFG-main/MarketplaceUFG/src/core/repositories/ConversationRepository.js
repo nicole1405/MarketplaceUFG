@@ -1,6 +1,7 @@
 /**
  * Repository para Conversaciones
  * Encapsula la lógica de persistencia de conversaciones
+ * 
  */
 
 import { IRepository } from './IRepository.js';

@@ -1,6 +1,12 @@
 /**
  * Clase principal de la aplicación
  * Aplica DIP: Coordina todos los componentes sin depender de implementaciones concretas
+ * Iniciaos repositorios, servicios y controladores, y maneja la navegación y eventos globales
+ * También se encarga de cargar el tema, inicializar datos de demostración, y exponer utilidades globales para debugging
+ * 
+ * La navegación se maneja directamente desde los botones para evitar recursión infinita con eventBus
+ * Los eventos de autenticación actualizan la UI y renderizan datos según el estado del usuario
+ * El tema se guarda en localStorage para persistencia entre sesiones
  */
 
 import { CONFIG } from './config/config.js';
@@ -36,6 +42,7 @@ class Application {
         this.initializeServices();
         this.initializeControllers();
         this.bindEvents();
+        this.loadTheme();
         this.initializeDemoData();
 
         // Verificar sesión existente
@@ -96,6 +103,39 @@ class Application {
         // La navegación se maneja directamente desde los botones y onAuthenticated
         // Botones de navegación
         this.bindNavigationButtons();
+        this.bindThemeToggle();
+    }
+
+    bindThemeToggle() {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+
+        btn.addEventListener('click', () => this.toggleTheme());
+    }
+
+    loadTheme() {
+        const theme = localStorage.getItem('ufg_marketplace_theme') || 'light';
+        this.applyTheme(theme);
+    }
+
+    toggleTheme() {
+        const current = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        this.applyTheme(next);
+    }
+
+    applyTheme(theme) {
+        const body = document.body;
+        const btn = document.getElementById('theme-toggle');
+
+        body.classList.toggle('dark-theme', theme === 'dark');
+
+        if (btn) {
+            // Sólo icono por accesibilidad; texto descriptivo en aria-label
+            btn.setAttribute('aria-label', theme === 'dark' ? 'Modo claro' : 'Modo oscuro');
+        }
+
+        localStorage.setItem('ufg_marketplace_theme', theme);
     }
 
     bindNavigationButtons() {

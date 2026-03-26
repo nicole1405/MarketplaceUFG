@@ -1,6 +1,7 @@
 /**
  * Controlador de Productos
  * Maneja la UI relacionada con productos
+ * Carga prodctos, crea muestra borra filtra e la imagen y el formulario de publicación
  */
 
 import { EVENTS } from '../../config/events.js';
@@ -48,6 +49,7 @@ export class ProductController {
             previewImagen: document.getElementById('preview-imagen'),
             previewInfo: document.getElementById('preview-info'),
             listaMisProductos: document.getElementById('lista-mis-productos'),
+            btnClearNoImage: document.getElementById('btn-clear-no-image'),
             
             modalDetalle: document.getElementById('modal-detalle'),
             detalleProducto: document.getElementById('detalle-producto')
@@ -95,6 +97,10 @@ export class ProductController {
             });
         }
 
+        if (this.elements.btnClearNoImage) {
+            this.elements.btnClearNoImage.addEventListener('click', () => this.handleDeleteNoImage());
+        }
+
         if (this.elements.modalDetalle) {
             this.elements.modalDetalle.addEventListener('click', (e) => {
                 if (e.target === this.elements.modalDetalle) {
@@ -126,7 +132,8 @@ export class ProductController {
     }
 
     async renderProducts(products = null) {
-        const productList = products || await this.productService.getAll();
+        const allProducts = products || await this.productService.getAll();
+        const productList = allProducts.filter(product => Array.isArray(product.imagenes) && product.imagenes.length > 0);
         const grid = this.elements.productosGrid;
         const emptyState = this.elements.emptyState;
 
@@ -146,6 +153,8 @@ export class ProductController {
             const card = this.createProductCard(product);
             grid.appendChild(card);
         });
+
+        this.updateResultsCount(productList.length, '');
     }
 
     createProductCard(product) {
@@ -522,6 +531,43 @@ export class ProductController {
         } else {
             toast.error(result.error);
         }
+    }
+
+    async handleDeleteNoImage() {
+        if (!confirm('¿Eliminar todos tus productos sin imagen? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        const products = await this.productService.getByCurrentUser();
+        const productsWithoutImage = products.filter(p => !Array.isArray(p.imagenes) || p.imagenes.length === 0);
+
+        if (productsWithoutImage.length === 0) {
+            toast.info('No tienes productos sin imagen.');
+            return;
+        }
+
+        let deleted = 0;
+        let failed = 0;
+
+        for (const product of productsWithoutImage) {
+            const result = await this.productService.delete(product.id);
+            if (result.success) {
+                deleted += 1;
+            } else {
+                failed += 1;
+            }
+        }
+
+        if (deleted > 0) {
+            toast.success(`Se eliminaron ${deleted} producto(s) sin imagen.`);
+        }
+
+        if (failed > 0) {
+            toast.error(`No se pudieron eliminar ${failed} producto(s).`);
+        }
+
+        this.renderProducts();
+        this.renderMyProducts();
     }
 
     showProductDetail(product) {

@@ -1,5 +1,7 @@
 /* ============================================
    RESET Y VARIABLES
+   Variables globales css y se encuentra el tema oscuro
+   respondivo y los media queries y estilos de componentes
    ============================================ */
 * {
     margin: 0;
@@ -26,6 +28,25 @@
     --chat-sent: #1976D2;
     --chat-received: #FFFFFF;
 }
+
+body.dark-theme {
+    --primary-color: #BB86FC;
+    --primary-dark: #7F39FB;
+    --primary-light: #EA80FC;
+    --secondary-color: #03DAC6;
+    --accent-color: #00BFA5;
+    --text-dark: #ECEFF1;
+    --text-light: #B0BEC5;
+    --bg-light: #121212;
+    --white: #1E1E1E;
+    --border: #2E2E2E;
+    --shadow: rgba(0, 0, 0, 0.6);
+    --shadow-hover: rgba(0, 0, 0, 0.8);
+    --chat-bg: #1A1F24;
+    --chat-sent: #03DAC6;
+    --chat-received: #263238;
+}
+
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -437,7 +458,48 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+    position: relative;
 }
+
+.header .container {
+    position: relative;
+}
+
+.theme-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.8);
+    background-color: rgba(255,255,255,0.2);
+    color: var(--white);
+    z-index: 110;
+    padding: 0;
+    display: grid;
+    place-content: center;
+}
+
+.theme-toggle:hover {
+    background-color: rgba(255,255,255,0.3);
+}
+
+.theme-toggle .theme-icon::before {
+    content: '◐';
+    font-size: 1rem;
+    display: inline-block;
+}
+
+body.dark-theme .theme-toggle .theme-icon::before {
+    content: '◑';
+}
+
+/* Mantener user-menu en el mismo nivel y evitar solapado */
+.user-menu {
+    margin-right: 58px;
+}
+
 
 .logo h1 {
     font-size: 1.8rem;
@@ -1299,6 +1361,123 @@ body {
 /* ============================================
    RESPONSIVE
    ============================================ */
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 1024px) {
+    .header .container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .nav {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .user-menu {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .main-content {
+        padding: 1.5rem 0;
+    }
+
+    .panel-vendedor {
+        width: 100%;
+        padding: 1.25rem;
+        box-shadow: 0 1px 6px var(--shadow);
+    }
+
+    .chat-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .chat-sidebar {
+        border-right: none;
+        border-bottom: 2px solid var(--border);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 12px;
+    }
+
+    .logo h1 {
+        font-size: 1.4rem;
+    }
+
+    .tagline {
+        font-size: 0.8rem;
+    }
+
+    .nav button,
+    .btn-primary,
+    .btn-secondary,
+    .btn-small {
+        padding: 0.55rem 0.9rem;
+        font-size: 0.85rem;
+    }
+
+    .productos-grid {
+        gap: 1rem;
+    }
+
+    .producto-card {
+        min-height: auto;
+    }
+
+    .detalle-info {
+        padding: 1rem;
+    }
+
+    .detalle-imagen-container,
+    .detalle-imagen {
+        height: 280px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header .container,
+    .main-content,
+    .panel-vendedor,
+    .chat-container {
+        padding: 0 10px;
+    }
+
+    .nav {
+        flex-wrap: wrap;
+    }
+
+    .search-bar {
+        max-width: 100%;
+        margin: 0 0.5rem 1rem;
+    }
+
+    .search-bar input {
+        font-size: 0.95rem;
+    }
+
+    .producto-nombre {
+        font-size: 1rem;
+    }
+
+    .producto-precio {
+        font-size: 1.2rem;
+    }
+
+    .producto-info {
+        padding: 0.85rem;
+    }
+
+    .product-feedback {
+        font-size: 0.85rem;
+    }
+}
+
 @media (max-width: 768px) {
     .header .container {
         flex-direction: column;
