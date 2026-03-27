@@ -11,6 +11,10 @@ export const EVENTS = {
         SESSION_RESTORED: 'auth:session:restored'
     },
     
+    PROFILE: {
+        UPDATED: 'profile:updated'
+    },
+    
     PRODUCTS: {
         CREATED: 'products:created',
         UPDATED: 'products:updated',
