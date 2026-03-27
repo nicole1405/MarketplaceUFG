@@ -1,21 +1,26 @@
 /**
- * Clase principal de la aplicación
- * Aplica DIP: Coordina todos los componentes sin depender de implementaciones concretas
+ * Main Application Class
+ * Coordinates all components using Dependency Injection
+ * Updated for Supabase backend
  */
 
 import { CONFIG } from './config/config.js';
 import { EVENTS } from './config/events.js';
 import { 
-    UserRepository, 
+    ProfileRepository, 
     ProductRepository, 
     ConversationRepository, 
+    MessageRepository,
+    CategoryRepository,
     SessionRepository 
-} from './core/repositories/index.js';
+} from './lib/supabase-repositories/index.js';
 import { 
     AuthService, 
     ProductService, 
-    ChatService 
-} from './core/services/index.js';
+    ChatService,
+    CategoryService,
+    StorageService
+} from './lib/supabase-services/index.js';
 import { eventBus, toast } from './core/utils/index.js';
 import { AuthController } from './features/auth/AuthController.js';
 import { ProductController } from './features/products/ProductController.js';
@@ -27,71 +32,80 @@ class Application {
         this.services = {};
         this.controllers = {};
         this.currentView = 'productos';
+        this.unsubscribers = [];
     }
 
     async initialize() {
-        console.log(`🚀 Iniciando ${CONFIG.APP.NAME} v${CONFIG.APP.VERSION}`);
+        console.log(`Iniciando ${CONFIG.APP.NAME} v${CONFIG.APP.VERSION}`);
 
         this.initializeRepositories();
         this.initializeServices();
         this.initializeControllers();
         this.bindEvents();
-        this.initializeDemoData();
 
-        // Verificar sesión existente
+        // Load categories regardless of login status
+        await this.loadCategories();
+
         const hasSession = await this.controllers.auth.checkSession();
         
         if (hasSession) {
             this.onAuthenticated();
         }
 
-        console.log('✅ Aplicación inicializada correctamente');
+        console.log('Aplicacion inicializada correctamente');
     }
 
     initializeRepositories() {
         this.repositories = {
-            users: new UserRepository(),
+            profiles: new ProfileRepository(),
             products: new ProductRepository(),
             conversations: new ConversationRepository(),
+            messages: new MessageRepository(),
+            categories: new CategoryRepository(),
             session: new SessionRepository()
         };
     }
 
     initializeServices() {
+        const authService = new AuthService(
+            this.repositories.profiles,
+            this.repositories.session
+        );
+        
         this.services = {
-            auth: new AuthService(
-                this.repositories.users,
-                this.repositories.session
+            auth: authService,
+            categories: new CategoryService(
+                this.repositories.categories
             ),
+            storage: new StorageService(),
             products: new ProductService(
                 this.repositories.products,
-                this.services.auth
+                this.repositories.profiles,
+                authService
             ),
             chat: new ChatService(
                 this.repositories.conversations,
+                this.repositories.messages,
                 this.repositories.products,
-                this.services.auth
+                authService
             )
         };
     }
 
     initializeControllers() {
         this.controllers = {
-            auth: new AuthController(this.services.auth),
-            products: new ProductController(this.services.products, this.services.auth),
+            auth: new AuthController(this.services.auth, this.services.storage),
+            products: new ProductController(this.services.products, this.services.categories, this.services.storage, this.services.auth),
             chat: new ChatController(this.services.chat, this.services.auth)
         };
     }
 
     bindEvents() {
-        // Eventos de autenticación
         eventBus.on(EVENTS.AUTH.LOGIN, () => this.onAuthenticated());
         eventBus.on(EVENTS.AUTH.LOGOUT, () => this.onLogout());
-        
-        // Eventos de navegación
+        eventBus.on(EVENTS.AUTH.SESSION_RESTORED, () => this.onAuthenticated());
         eventBus.on(EVENTS.UI.VIEW_CHANGED, (view) => this.switchView(view));
         
-        // Botones de navegación
         this.bindNavigationButtons();
     }
 
@@ -110,76 +124,67 @@ class Application {
         }
     }
 
-    async initializeDemoData() {
-        const demoProducts = [
-            {
-                id: Date.now() + 1,
-                nombre: 'Laptop Dell Inspiron 15',
-                precio: 450.00,
-                descripcion: 'Laptop en excelente estado, ideal para estudiantes. Intel Core i5, 8GB RAM, 256GB SSD. Incluye cargador original.',
-                vendedor: CONFIG.DEFAULTS.DEMO_USER.email,
-                vendedorNombre: CONFIG.DEFAULTS.DEMO_USER.nombre,
-                imagen: null,
-                fecha: new Date().toISOString(),
-                id_categoria: 1,
-                categoriaNombre: 'Electrónica'
-            },
-            {
-                id: Date.now() + 2,
-                nombre: 'Calculadora Científica Casio',
-                precio: 25.00,
-                descripcion: 'Calculadora científica Casio FX-991EX, perfecta para ingeniería. Como nueva, con manual incluido.',
-                vendedor: CONFIG.DEFAULTS.DEMO_USER.email,
-                vendedorNombre: CONFIG.DEFAULTS.DEMO_USER.nombre,
-                imagen: null,
-                fecha: new Date().toISOString(),
-                id_categoria: 1,
-                categoriaNombre: 'Electrónica'
-            },
-            {
-                id: Date.now() + 3,
-                nombre: 'Libros de Programación',
-                precio: 15.00,
-                descripcion: 'Pack de 3 libros: Clean Code, JavaScript: The Good Parts, y Design Patterns. En buen estado.',
-                vendedor: CONFIG.DEFAULTS.DEMO_USER.email,
-                vendedorNombre: CONFIG.DEFAULTS.DEMO_USER.nombre,
-                imagen: null,
-                fecha: new Date().toISOString(),
-                id_categoria: 2,
-                categoriaNombre: 'Libros'
+    async loadCategories() {
+        try {
+            const categories = await this.services.categories.getAll();
+            window.categories = categories;
+            
+            // Update product controller with categories
+            if (this.controllers.products) {
+                this.controllers.products.updateCategories(categories);
             }
-        ];
-
-        const { Product } = await import('./core/domain/Product.js');
-        await this.services.products.initializeDemoData(
-            demoProducts.map(p => Product.fromJSON(p))
-        );
+            
+            return categories;
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            return [];
+        }
     }
 
-    onAuthenticated() {
+    async onAuthenticated() {
         const user = this.services.auth.getCurrentUser();
+        const profile = this.services.auth.getCurrentProfile();
         
-        // Actualizar nombre en header
-        const userNameElement = document.getElementById('user-name');
-        if (userNameElement) {
-            userNameElement.textContent = `👤 ${user.nombre}`;
+        const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjOTk5Ij48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iOTAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PC9zdmc+';
+        
+        const userNameEl = document.getElementById('user-name');
+        const userAvatarEl = document.getElementById('user-avatar');
+        
+        if (userNameEl && user) {
+            const nombre = profile?.nombre || user.nombre || user.email.split('@')[0] || 'Usuario';
+            userNameEl.textContent = nombre;
+        }
+        
+        if (userAvatarEl) {
+            const avatarUrl = profile?.avatar_url || '';
+            userAvatarEl.src = avatarUrl || defaultAvatar;
         }
 
-        // Renderizar datos iniciales
+        await this.loadCategories();
+        
         this.controllers.products.renderProducts();
         this.controllers.chat.renderConversations();
         this.controllers.chat.updateBadge();
         
-        // Mostrar vista por defecto
         this.switchView('productos');
     }
 
-    onLogout() {
+    async onLogout() {
         this.currentView = 'productos';
+        
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        
+        if (userAvatar) {
+            userAvatar.src = '';
+            userAvatar.style.display = 'none';
+        }
+        if (userName) {
+            userName.textContent = 'Usuario';
+        }
     }
 
     switchView(viewName) {
-        // Ocultar todas las vistas
         const views = ['vista-productos', 'vista-vendedor', 'vista-mensajes'];
         views.forEach(id => {
             const element = document.getElementById(id);
@@ -188,13 +193,11 @@ class Application {
             }
         });
 
-        // Mostrar vista seleccionada
         const targetView = document.getElementById(`vista-${viewName}`);
         if (targetView) {
             targetView.style.display = 'block';
             this.currentView = viewName;
 
-            // Actualizar datos según la vista
             if (viewName === 'productos') {
                 this.controllers.products.renderProducts();
             } else if (viewName === 'vendedor') {
@@ -205,10 +208,7 @@ class Application {
             }
         }
 
-        // Actualizar estado de botones de navegación
         this.updateNavigationState(viewName);
-        
-        eventBus.emit(EVENTS.UI.VIEW_CHANGED, viewName);
     }
 
     updateNavigationState(activeView) {
@@ -230,32 +230,26 @@ class Application {
             activeBtn.classList.add('active');
         }
     }
+
+    cleanup() {
+        this.unsubscribers.forEach(unsub => unsub());
+    }
 }
 
-// Inicializar aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new Application();
     window.app.initialize();
 });
 
-// Exponer utilidades globales para debugging
-window.exportarDatos = () => {
-    const data = {
-        users: JSON.parse(localStorage.getItem(CONFIG.STORAGE.KEYS.USERS) || '[]'),
-        products: JSON.parse(localStorage.getItem(CONFIG.STORAGE.KEYS.PRODUCTS) || '[]'),
-        conversations: JSON.parse(localStorage.getItem(CONFIG.STORAGE.KEYS.CONVERSATIONS) || '[]')
-    };
-    console.log('📦 Datos exportados:', data);
-    return data;
+window.exportarDatos = async () => {
+    console.log('Exportando datos (solo visible en desarrollo)');
 };
 
 window.limpiarTodosDatos = () => {
-    if (confirm('¿Estás seguro de que deseas eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
-        Object.values(CONFIG.STORAGE.KEYS).forEach(key => {
-            localStorage.removeItem(key);
+    if (confirm('¿Estás seguro de que deseas cerrar sesión y limpiar datos locales?')) {
+        window.app.services.auth.logout().then(() => {
+            location.reload();
         });
-        toast.success('Todos los datos han sido eliminados');
-        location.reload();
     }
 };
 

@@ -45,10 +45,10 @@ export class ToastService {
         
         // Icono según tipo
         const icons = {
-            success: '✓',
-            error: '✕',
-            warning: '⚠',
-            info: 'ℹ'
+            success: 'OK',
+            error: 'X',
+            warning: '!',
+            info: 'i'
         };
         
         toast.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span> ${message}`;

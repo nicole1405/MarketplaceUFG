@@ -107,24 +107,27 @@
         <header class="header">
             <div class="container">
                 <div class="logo">
-                    <h1>🎓 Marketplace UFG</h1>
+                    <h1>Marketplace UFG</h1>
                     <p class="tagline">Conectando emprendedores universitarios</p>
                 </div>
                 <nav class="nav">
                     <button class="btn-secondary" id="nav-productos">
-                        🛍️ Productos
+                        Productos
                     </button>
                     <button class="btn-secondary" id="nav-vendedor">
-                        📦 Vender
+                        Vender
                     </button>
                     <button class="btn-secondary" id="nav-mensajes">
-                        💬 Chats
+                        Chats
                         <span id="badge-mensajes" class="badge">0</span>
                     </button>
                     <div class="user-menu">
-                        <span class="user-name" id="user-name">👤 Usuario</span>
+                        <div class="user-profile" id="user-profile">
+                            <img id="user-avatar" class="user-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjOTk5Ij48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iOTAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="Avatar">
+                            <span class="user-name" id="user-name">Usuario</span>
+                        </div>
                         <button class="btn-logout" onclick="window.app.controllers.auth.logout()">
-                            🚪 Salir
+                            Salir
                         </button>
                     </div>
                 </nav>
@@ -142,7 +145,7 @@
                         <input 
                             type="text" 
                             id="buscar-producto" 
-                            placeholder="🔍 Buscar producto por nombre..."
+                            placeholder="Buscar producto por nombre..."
                         >
                     </div>
                     <p class="results-count" id="results-count">Mostrando todos los productos</p>
@@ -153,7 +156,7 @@
                 </div>
 
                 <div class="empty-state" id="empty-state" style="display: none;">
-                    <h3>📭 No se encontraron productos</h3>
+                    <h3>No se encontraron productos</h3>
                     <p>Intenta con otra búsqueda o sé el primero en publicar un producto</p>
                 </div>
             </div>
@@ -163,77 +166,93 @@
         <section class="main-content" id="vista-vendedor" style="display: none;">
             <div class="container">
                 <div class="panel-vendedor">
-                    <h2>📦 Publicar Producto</h2>
-                    <p class="subtitle">Completa la información de tu producto</p>
-
-                    <form id="form-producto">
-                        <div class="form-group">
-                            <label for="nombre-producto">Nombre del Producto *</label>
-                            <input 
-                                type="text" 
-                                id="nombre-producto" 
-                                placeholder="Ej: Laptop Dell Inspiron 15"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="categoria-producto">Categoría *</label>
-                            <select id="categoria-producto" required>
-                                <option value="">Selecciona una categoría</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="precio-producto">Precio (USD) *</label>
-                            <input 
-                                type="number" 
-                                id="precio-producto" 
-                                placeholder="0.00"
-                                step="0.01"
-                                min="0"
-                                required
-                            >
-                        </div>
-
-                        <div class="form-group">
-                            <label for="descripcion-producto">Descripción *</label>
-                            <textarea 
-                                id="descripcion-producto" 
-                                rows="5"
-                                placeholder="Describe tu producto: características, condición, etc."
-                                required
-                            ></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="imagen-producto">Imagen del Producto</label>
-                            <input 
-                                type="file" 
-                                id="imagen-producto" 
-                                accept="image/*"
-                            >
-                            <div id="preview-container" class="preview-container" style="display: none;">
-                                <img id="preview-imagen" alt="Preview">
-                                <button type="button" class="btn-remove" onclick="window.app.controllers.products.clearImage()">✕</button>
+                    <!-- Vista inicial: Mis productos + botón nuevo -->
+                    <div id="vendedor-inicio">
+                        <h2>Mis Productos</h2>
+                        
+                        <button id="btn-nuevo-producto" class="btn-primary btn-nuevo">
+                            Publicar Nuevo Producto
+                        </button>
+                        
+                        <div class="mis-productos" id="mis-productos">
+                            <div id="lista-mis-productos" class="productos-list">
+                                <p class="empty-message">Aún no has publicado ningún producto</p>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">
-                                ✓ Publicar Producto
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="window.app.controllers.products.clearForm()">
-                                ↺ Limpiar
-                            </button>
-                        </div>
-                    </form>
+                    <!-- Vista del formulario -->
+                    <div id="vendedor-formulario" style="display: none;">
+                        <button id="btn-volver-productos" class="btn-secondary btn-volver">
+                            Volver a Mis Productos
+                        </button>
+                        
+                        <h2>Publicar Producto</h2>
+                        <p class="subtitle">Completa la información de tu producto</p>
 
-                    <div class="mis-productos" id="mis-productos">
-                        <h3>Mis Productos Publicados</h3>
-                        <div id="lista-mis-productos" class="productos-list">
-                            <p class="empty-message">Aún no has publicado ningún producto</p>
-                        </div>
+                        <form id="form-producto">
+                            <div class="form-group">
+                                <label for="nombre-producto">Nombre del Producto *</label>
+                                <input 
+                                    type="text" 
+                                    id="nombre-producto" 
+                                    placeholder="Ej: Laptop Dell Inspiron 15"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="categoria-producto">Categoría *</label>
+                                <select id="categoria-producto" required>
+                                    <option value="">Selecciona una categoría</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="precio-producto">Precio (USD) *</label>
+                                <input 
+                                    type="number" 
+                                    id="precio-producto" 
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                >
+                            </div>
+
+                            <div class="form-group">
+                                <label for="descripcion-producto">Descripción *</label>
+                                <textarea 
+                                    id="descripcion-producto" 
+                                    rows="5"
+                                    placeholder="Describe tu producto: características, condición, etc."
+                                    required
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="imagen-producto">Imágenes del Producto (máx. 5)</label>
+                                <input 
+                                    type="file" 
+                                    id="imagen-producto" 
+                                    accept="image/*"
+                                    multiple
+                                >
+                                <p class="form-hint">Selecciona hasta 5 imágenes. Primera imagen será la principal.</p>
+                                <div id="preview-container" class="preview-container" style="display: none;">
+                                    <div id="preview-images" class="preview-images"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    Publicar Producto
+                                </button>
+                                <button type="button" class="btn-secondary" onclick="window.app.controllers.products.clearForm()">
+                                    Limpiar
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -245,34 +264,28 @@
                 <div class="chat-container">
                     <div class="chat-sidebar">
                         <div class="chat-sidebar-header">
-                            <h3>💬 Conversaciones</h3>
+                            <h3>Conversaciones</h3>
                         </div>
                         <div id="lista-conversaciones" class="conversaciones-list">
                             <p class="empty-message">No tienes conversaciones aún</p>
                         </div>
                     </div>
-
-                    <div class="chat-main">
-                        <div id="chat-empty" class="chat-empty">
-                            <div class="chat-empty-content">
-                                <h3>💬</h3>
-                                <p>Selecciona una conversación para comenzar a chatear</p>
+                    <div class="chat-content">
+                        <div class="chat-main">
+                            <div id="chat-empty" class="chat-empty">
+                                <h3>Selecciona una conversación para comenzar a chatear</h3>
                             </div>
                         </div>
-
                         <div id="chat-activo" class="chat-activo" style="display: none;">
                             <div class="chat-header">
                                 <div class="chat-header-info">
                                     <h3 id="chat-titulo">Producto</h3>
                                     <p id="chat-subtitulo">Conversación con usuario</p>
                                 </div>
-                                <button class="btn-close-chat" onclick="window.app.controllers.chat.closeChat()">✕</button>
+                                <button class="btn-close-chat" onclick="window.app.controllers.chat.closeChat()">Cerrar</button>
                             </div>
-
                             <div id="chat-mensajes" class="chat-mensajes">
-                                <!-- Mensajes se cargan dinámicamente -->
                             </div>
-
                             <div class="chat-input-container">
                                 <form id="form-enviar-mensaje">
                                     <input 
@@ -282,7 +295,7 @@
                                         required
                                     >
                                     <button type="submit" class="btn-send">
-                                        ➤
+                                        Enviar
                                     </button>
                                 </form>
                             </div>
@@ -303,6 +316,43 @@
         </div>
     </div>
 
+    <!-- Modal de Editar Perfil -->
+    <div id="modal-perfil" class="modal">
+        <div class="modal-content modal-perfil">
+            <span class="close" onclick="window.app.controllers.auth.closeProfileModal()">&times;</span>
+            <div class="perfil-header">
+                <h2>Editar Perfil</h2>
+            </div>
+            <form id="form-perfil" class="perfil-form">
+                <div class="perfil-avatar-section">
+                    <img id="perfil-avatar-preview" class="perfil-avatar-preview" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjOTk5Ij48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iOTAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="Avatar">
+                    <div class="perfil-avatar-buttons">
+                        <label for="perfil-avatar" class="btn-cambiar-foto">
+                            Cambiar Foto
+                        </label>
+                        <button type="button" id="btn-eliminar-foto" class="btn-eliminar-foto">
+                            Eliminar Foto
+                        </button>
+                    </div>
+                    <input type="file" id="perfil-avatar" accept="image/*" style="display: none;">
+                </div>
+                <div class="form-group">
+                    <label for="perfil-nombre">Nombre</label>
+                    <input type="text" id="perfil-nombre" placeholder="Tu nombre" required>
+                </div>
+                <div class="form-group">
+                    <label for="perfil-email">Email</label>
+                    <input type="email" id="perfil-email" disabled>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     <!-- Scripts -->
     <script type="module" src="src/app.js"></script>
 </body>

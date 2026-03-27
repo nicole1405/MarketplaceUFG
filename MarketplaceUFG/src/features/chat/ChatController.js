@@ -1,8 +1,9 @@
 /**
- * Controlador de Chat
- * Maneja la UI relacionada con mensajería
+ * Chat Controller
+ * Manages chat UI with Supabase backend
  */
 
+import { supabase } from '../../lib/supabase.js';
 import { EVENTS } from '../../config/events.js';
 import { MESSAGES } from '../../config/messages.js';
 import { eventBus, toast, UIUtils } from '../../core/utils/index.js';
@@ -11,8 +12,28 @@ export class ChatController {
     constructor(chatService, authService) {
         this.chatService = chatService;
         this.authService = authService;
-        this.elements = {};
+        this.activeConversationId = null;
         this.init();
+    }
+
+    init() {
+        this.cacheElements();
+        this.bindEvents();
+        this.bindEventBus();
+        this.setupRealtime();
+    }
+
+    setupRealtime() {
+        supabase
+            .channel('messages-channel')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                const currentUser = this.authService.getCurrentUser();
+                if (payload.new.remitente_id !== currentUser?.id) {
+                    this.updateBadge();
+                    this.renderConversations();
+                }
+            })
+            .subscribe();
     }
 
     init() {
@@ -36,19 +57,16 @@ export class ChatController {
     }
 
     bindEvents() {
-        // Formulario de enviar mensaje
         if (this.elements.formEnviarMensaje) {
             this.elements.formEnviarMensaje.addEventListener('submit', (e) => this.handleSendMessage(e));
         }
 
-        // Escuchar evento de nueva conversación desde producto
         eventBus.on(EVENTS.CHAT.CONVERSATION_STARTED, (data) => {
             this.handleNewConversationFromProduct(data);
         });
     }
 
     bindEventBus() {
-        // Actualizar badge cuando cambian las conversaciones
         eventBus.on(EVENTS.CHAT.MESSAGE_SENT, () => {
             this.updateBadge();
         });
@@ -67,11 +85,6 @@ export class ChatController {
                 return;
             }
 
-            // Ordenar por última actualización
-            conversations.sort((a, b) => 
-                new Date(b.ultimaActualizacion) - new Date(a.ultimaActualizacion)
-            );
-
             container.innerHTML = '';
             conversations.forEach(conv => {
                 const item = this.createConversationItem(conv);
@@ -80,7 +93,8 @@ export class ChatController {
 
             this.updateBadge();
         } catch (error) {
-            container.innerHTML = `<p class="empty-message">${error.message}</p>`;
+            console.error('Error loading conversations:', error);
+            container.innerHTML = `<p class="empty-message">Error al cargar conversaciones</p>`;
         }
     }
 
@@ -88,24 +102,23 @@ export class ChatController {
         const item = document.createElement('div');
         item.className = 'conversacion-item';
         
-        const activeConversation = this.chatService.getActiveConversation();
-        if (activeConversation && activeConversation.id === conversation.id) {
+        if (this.activeConversationId === conversation.id) {
             item.classList.add('active');
         }
 
         const currentUser = this.authService.getCurrentUser();
-        const otherUser = conversation.getOtherParticipant(currentUser.email);
-        const lastMessage = conversation.getLastMessage();
+        const otherUser = conversation.comprador_id === currentUser.id 
+            ? conversation.vendedor 
+            : conversation.comprador;
 
-        const lastText = lastMessage ? lastMessage.texto : 'Nueva conversación';
-        const unreadCount = conversation.getUnreadCountFor(currentUser.email);
-        const showBadge = unreadCount > 0 && (!activeConversation || activeConversation.id !== conversation.id);
+        const lastText = 'Nueva conversación';
+        
+        const showBadge = false;
 
         item.innerHTML = `
-            <div class="conversacion-producto">${UIUtils.escapeHtml(conversation.productoNombre)}</div>
-            <div class="conversacion-usuario">Con: ${UIUtils.escapeHtml(otherUser.nombre)}</div>
+            <div class="conversacion-producto">${UIUtils.escapeHtml(conversation.producto?.nombre || 'Producto')}</div>
+            <div class="conversacion-usuario">Con: ${UIUtils.escapeHtml(otherUser?.nombre || 'Usuario')}</div>
             <div class="conversacion-ultimo">${UIUtils.escapeHtml(lastText)}</div>
-            ${showBadge ? `<span class="conversacion-badge">${unreadCount}</span>` : ''}
         `;
 
         item.addEventListener('click', () => this.openChat(conversation));
@@ -114,9 +127,8 @@ export class ChatController {
     }
 
     async openChat(conversation) {
-        this.chatService.setActiveConversation(conversation);
+        this.activeConversationId = conversation.id;
 
-        // Actualizar UI
         if (this.elements.chatEmpty) {
             this.elements.chatEmpty.style.display = 'none';
         }
@@ -124,53 +136,67 @@ export class ChatController {
             this.elements.chatActivo.style.display = 'flex';
         }
 
-        // Actualizar header
         const currentUser = this.authService.getCurrentUser();
-        const otherUser = conversation.getOtherParticipant(currentUser.email);
+        const otherUser = conversation.comprador_id === currentUser.id 
+            ? conversation.vendedor 
+            : conversation.comprador;
 
         if (this.elements.chatTitulo) {
-            this.elements.chatTitulo.textContent = conversation.productoNombre;
+            this.elements.chatTitulo.textContent = conversation.producto?.nombre || 'Producto';
         }
         if (this.elements.chatSubtitulo) {
-            this.elements.chatSubtitulo.textContent = `Conversación con ${otherUser.nombre}`;
+            this.elements.chatSubtitulo.textContent = `Conversación con ${otherUser?.nombre || 'Usuario'}`;
         }
 
-        // Renderizar mensajes
-        this.renderMessages();
-        
-        // Actualizar lista
+        this.renderMessages(conversation);
         this.renderConversations();
+        this.updateBadge();
 
-        // Scroll al final
         setTimeout(() => UIUtils.scrollToBottom(this.elements.chatMensajes), 100);
 
         eventBus.emit(EVENTS.CHAT.CONVERSATION_OPENED, conversation);
     }
 
-    renderMessages() {
+    async renderMessages(conversation = null) {
         const container = this.elements.chatMensajes;
         if (!container) return;
 
-        const conversation = this.chatService.getActiveConversation();
+        if (!conversation) {
+            conversation = await this.chatService.getConversation(this.activeConversationId);
+        }
+        
         if (!conversation) return;
 
-        container.innerHTML = '';
-        const currentUser = this.authService.getCurrentUser();
+        try {
+            const messages = await this.chatService.getMessages(conversation.id);
+            
+            container.innerHTML = '';
+            const currentUser = this.authService.getCurrentUser();
 
-        conversation.mensajes.forEach(message => {
-            const bubble = this.createMessageBubble(message, message.isFrom(currentUser.email));
-            container.appendChild(bubble);
-        });
+            messages.forEach(message => {
+                const bubble = this.createMessageBubble(message, message.remitente_id === currentUser.id);
+                container.appendChild(bubble);
+            });
+
+            await this.chatService.markAsRead(conversation.id);
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        }
     }
 
     createMessageBubble(message, isOwn) {
         const bubble = document.createElement('div');
         bubble.className = `mensaje-bubble ${isOwn ? 'mensaje-enviado' : 'mensaje-recibido'}`;
 
+        const time = new Date(message.created_at).toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
         bubble.innerHTML = `
             <div>${UIUtils.escapeHtml(message.texto)}</div>
             <div class="mensaje-info">
-                <span>${message.getFormattedTime()}</span>
+                <span>${time}</span>
             </div>
         `;
 
@@ -180,19 +206,17 @@ export class ChatController {
     async handleSendMessage(event) {
         event.preventDefault();
 
-        const conversation = this.chatService.getActiveConversation();
-        if (!conversation) return;
+        if (!this.activeConversationId) return;
 
         const input = this.elements.chatInput;
         const texto = input?.value.trim();
 
         if (!texto) return;
 
-        const result = await this.chatService.sendMessage(conversation.id, texto);
+        const result = await this.chatService.sendMessage(this.activeConversationId, texto);
 
         if (result.success) {
             this.renderMessages();
-            this.renderConversations();
             input.value = '';
             UIUtils.scrollToBottom(this.elements.chatMensajes);
             eventBus.emit(EVENTS.CHAT.MESSAGE_SENT, result.conversation);
@@ -202,16 +226,16 @@ export class ChatController {
     }
 
     async handleNewConversationFromProduct({ product, mensaje }) {
-        const result = await this.chatService.startConversation(product.id, mensaje);
+        const sellerId = product.vendedor_id || product.vendedor?.user_id;
+        
+        const result = await this.chatService.createConversation(product.id, sellerId);
 
         if (result.success) {
-            toast.success(result.message);
-            this.chatService.setActiveConversation(result.conversation);
+            await this.chatService.sendMessage(result.conversation.id, mensaje);
+            toast.success('Conversación iniciada');
             
-            // Cambiar a vista de mensajes
             eventBus.emit(EVENTS.UI.VIEW_CHANGED, 'mensajes');
             
-            // Renderizar
             setTimeout(() => {
                 this.openChat(result.conversation);
             }, 100);
@@ -221,7 +245,7 @@ export class ChatController {
     }
 
     closeChat() {
-        this.chatService.clearActiveConversation();
+        this.activeConversationId = null;
 
         if (this.elements.chatEmpty) {
             this.elements.chatEmpty.style.display = 'flex';
@@ -246,7 +270,12 @@ export class ChatController {
             }
         }
 
-        badge.textContent = count;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
     }
 }
 
