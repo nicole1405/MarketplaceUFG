@@ -15,7 +15,7 @@ import {
     UserRepository, 
     ProductRepository, 
     ConversationRepository, 
-    SessionRepository 
+    SessionRepository   
 } from './core/repositories/index.js';
 import { 
     AuthService, 
