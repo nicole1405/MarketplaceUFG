@@ -96,7 +96,6 @@ Instala la extensión **"Live Server"** y haz clic derecho en `index.html` → "
 ## Estructura del Proyecto
 
 ```
-MarketplaceUFG/
 ├── index.html              ← Página principal
 ├── styles.css              ← Estilos globales
 ├── README.md               ← Este archivo

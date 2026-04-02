@@ -27,7 +27,6 @@ La arquitectura de Marketplace UFG persigue varios objetivos fundamentales:
 ## 2. Estructura del Proyecto
 
 ```
-MarketplaceUFG/
 ├── index.html                 # Punto de entrada de la aplicación
 ├── styles.css                # Estilos globales de la aplicación
 ├── src/
