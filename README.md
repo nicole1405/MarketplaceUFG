@@ -117,8 +117,8 @@ Instala la extensión **"Live Server"** y haz clic derecho en `index.html` → "
 │       ├── supabase.js
 │       ├── supabase-repositories/
 │       └── supabase-services/
-└── docs/
-    └── ARCHITECTURE.md
+├── ARCHITECTURE.md          ← Documentación de arquitectura
+└── CONTRIBUIR.md            ← Guía de contribución
 ```
 
 ---
