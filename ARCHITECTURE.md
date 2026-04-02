@@ -62,8 +62,8 @@ La arquitectura de Marketplace UFG persigue varios objetivos fundamentales:
 │           ├── ChatService.js
 │           ├── CategoryService.js
 │           └── StorageService.js
-└── docs/
-    └── ARCHITECTURE.md
+├── ARCHITECTURE.md           # Este archivo
+└── CONTRIBUIR.md             # Guía de contribución
 ```
 
 ---
