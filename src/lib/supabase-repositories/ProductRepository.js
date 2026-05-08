@@ -28,6 +28,7 @@ export class ProductRepository {
                 )
             `)
             .eq('estado', 'disponible')
+            .eq('estado_revision', 'aprobado')
             .order('created_at', { ascending: false });
 
         if (error) throw new Error(error.message);
@@ -97,6 +98,7 @@ export class ProductRepository {
                 )
             `)
             .eq('estado', 'disponible')
+            .eq('estado_revision', 'aprobado')
             .or(`nombre.ilike.${searchTerm},descripcion.ilike.${searchTerm}`)
             .order('created_at', { ascending: false });
 
@@ -121,6 +123,7 @@ export class ProductRepository {
                 )
             `)
             .eq('estado', 'disponible')
+            .eq('estado_revision', 'aprobado')
             .eq('categoria_id', categoryId)
             .order('created_at', { ascending: false });
 
@@ -139,7 +142,8 @@ export class ProductRepository {
                 imagenes_paths: product.imagenes_paths || [],
                 vendedor_id: product.vendedor_id,
                 categoria_id: product.categoria_id || null,
-                estado: 'disponible'
+                estado: 'disponible',
+                estado_revision: 'pendiente'
             })
             .select(`
                 *,
@@ -221,6 +225,90 @@ export class ProductRepository {
 
         if (error) throw new Error(error.message);
         return count;
+    }
+
+    // Admin-only methods
+
+    async getAllForAdmin() {
+        const { data, error } = await supabase
+            .from(this.table)
+            .select(`
+                *,
+                categorias:categoria_id(
+                    id,
+                    nombre,
+                    icono
+                ),
+                vendedor:vendedor_id(
+                    user_id,
+                    nombre,
+                    email
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    }
+
+    async approve(id, adminId) {
+        const { data, error } = await supabase
+            .from(this.table)
+            .update({
+                estado_revision: 'aprobado',
+                revisado_por: adminId,
+                fecha_revision: new Date().toISOString(),
+                motivo_rechazo: null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select(`
+                *,
+                categorias:categoria_id(
+                    id,
+                    nombre,
+                    icono
+                ),
+                vendedor:vendedor_id(
+                    user_id,
+                    nombre,
+                    email
+                )
+            `)
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    async reject(id, adminId, motivo) {
+        const { data, error } = await supabase
+            .from(this.table)
+            .update({
+                estado_revision: 'rechazado',
+                revisado_por: adminId,
+                fecha_revision: new Date().toISOString(),
+                motivo_rechazo: motivo,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select(`
+                *,
+                categorias:categoria_id(
+                    id,
+                    nombre,
+                    icono
+                ),
+                vendedor:vendedor_id(
+                    user_id,
+                    nombre,
+                    email
+                )
+            `)
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
     }
 }
 
