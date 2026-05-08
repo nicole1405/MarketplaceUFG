@@ -141,6 +141,14 @@ export class AuthService {
         return this.getCurrentUser();
     }
 
+    requireAdmin() {
+        const user = this.requireAuth();
+        if (!this.isAdmin()) {
+            throw new Error('Only administrators can perform this action');
+        }
+        return user;
+    }
+
     getCurrentProfile() {
         return this.currentProfile;
     }

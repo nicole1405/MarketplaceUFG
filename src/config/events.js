@@ -23,6 +23,15 @@ export const EVENTS = {
         FILTERED: 'products:filtered'
     },
     
+    ADMIN: {
+        PRODUCT_APPROVED: 'admin:product:approved',
+        PRODUCT_REJECTED: 'admin:product:rejected',
+        ROLE_CHANGED: 'admin:role:changed',
+        CATEGORY_CREATED: 'admin:category:created',
+        CATEGORY_UPDATED: 'admin:category:updated',
+        CATEGORY_DELETED: 'admin:category:deleted'
+    },
+    
     CHAT: {
         MESSAGE_SENT: 'chat:message:sent',
         MESSAGE_RECEIVED: 'chat:message:received',

@@ -7,3 +7,4 @@ export { ProductService } from './ProductService.js';
 export { ChatService } from './ChatService.js';
 export { CategoryService } from './CategoryService.js';
 export { StorageService } from './StorageService.js';
+export { AdminService } from './AdminService.js';
