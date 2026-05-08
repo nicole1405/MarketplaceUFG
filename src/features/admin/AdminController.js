@@ -268,13 +268,10 @@ export class AdminController {
 
     async loadCategories() {
         try {
-            const categories = await this.adminService.getAllUsers();
-            // Categories are loaded from CategoryService, not AdminService
-            // This method is a placeholder - actual category loading uses CategoryService
-            const categoryService = window.app?.controllers?.categories;
+            const categoryService = window.app?.services?.categories;
             if (categoryService) {
-                const cats = await categoryService.getAll?.() || [];
-                this.renderCategories(cats);
+                const categories = await categoryService.getAll();
+                this.renderCategories(categories);
             }
         } catch (error) {
             toast.error(error.message);
@@ -358,21 +355,14 @@ export class AdminController {
     }
 
     async refreshCategories() {
-        // Delegate to category controller if available
-        const categoryController = window.app?.controllers?.categories;
-        if (categoryController && typeof categoryController.loadCategories === 'function') {
-            await categoryController.loadCategories();
-        } else if (this.elements.btnLoadCategories) {
-            // Fallback: reload via admin service if category service is available
-            try {
-                const categoryService = window.app?.services?.categoryService;
-                if (categoryService) {
-                    const categories = await categoryService.getAll();
-                    this.renderCategories(categories);
-                }
-            } catch (error) {
-                console.error('Error refreshing categories:', error);
+        try {
+            const categoryService = window.app?.services?.categories;
+            if (categoryService) {
+                const categories = await categoryService.getAll();
+                this.renderCategories(categories);
             }
+        } catch (error) {
+            console.error('Error refreshing categories:', error);
         }
     }
 }
