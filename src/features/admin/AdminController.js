@@ -51,6 +51,7 @@ export class AdminController {
         };
 
         this.pendingRejectProductId = null;
+        this.editingCategoryId = null;
     }
 
     bindEvents() {
@@ -107,7 +108,16 @@ export class AdminController {
                 if (e.target.dataset.action === 'delete-category') {
                     this.handleDeleteCategory(e.target.dataset.categoryId);
                 }
+                if (e.target.dataset.action === 'edit-category') {
+                    this.populateCategoryEditForm(e.target.dataset.categoryId);
+                }
             });
+        }
+
+        // Cancel edit button
+        const btnCancelEdit = document.getElementById('btn-cancel-category-edit');
+        if (btnCancelEdit) {
+            btnCancelEdit.addEventListener('click', () => this.resetCategoryForm());
         }
     }
 
@@ -247,6 +257,13 @@ export class AdminController {
     }
 
     async handleChangeRole(userId, currentRole) {
+        // Prevent self-demotion: admin cannot change their own role
+        const currentAdminId = this.adminService?.authService?.getCurrentUser?.()?.id;
+        if (currentAdminId && userId === currentAdminId) {
+            toast.error('No puedes cambiar tu propio rol. Pide a otro administrador que lo haga.');
+            return;
+        }
+
         if (!confirm(MESSAGES.ADMIN.ROLE_CHANGE_CONFIRM)) return;
 
         const newRole = currentRole === 'admin' ? 'anunciante' : 'admin';
@@ -283,7 +300,7 @@ export class AdminController {
         const container = this.elements.categoriesList;
         if (!container) return;
 
-        if (categories.length === 0) {
+        if (!categories || categories.length === 0) {
             container.innerHTML = '<p class="empty-message">No hay categorias</p>';
             return;
         }
@@ -295,6 +312,11 @@ export class AdminController {
                     <p>${UIUtils.escapeHtml(cat.descripcion || 'Sin descripcion')}</p>
                 </div>
                 <div class="admin-category-actions">
+                    <button class="btn-action btn-edit-category" 
+                        data-action="edit-category" 
+                        data-category-id="${cat.id}">
+                        Editar
+                    </button>
                     <button class="btn-action btn-delete-category" 
                         data-action="delete-category" 
                         data-category-id="${cat.id}">
@@ -318,22 +340,77 @@ export class AdminController {
         }
 
         try {
-            const result = await this.adminService.createCategory({ nombre, descripcion, icono });
-            if (result.success) {
-                toast.success(result.message);
-                this.eventEmitter.emit(EVENTS.ADMIN.CATEGORY_CREATED, result.category);
-                if (this.elements.formCategory) {
-                    this.elements.formCategory.reset();
-                }
-                // Refresh categories list if available
-                this.refreshCategories();
+            if (this.editingCategoryId) {
+                // Update existing category
+                await this.handleUpdateCategory(this.editingCategoryId, { nombre, descripcion, icono });
             } else {
-                toast.error(result.error);
+                // Create new category
+                await this.createNewCategory({ nombre, descripcion, icono });
             }
         } catch (error) {
             toast.error(error.message);
-            console.error('Error creating category:', error);
+            console.error('Error handling category:', error);
         }
+    }
+
+    async createNewCategory(data) {
+        const result = await this.adminService.createCategory(data);
+        if (result.success) {
+            toast.success(result.message);
+            this.eventEmitter.emit(EVENTS.ADMIN.CATEGORY_CREATED, result.category);
+            this.resetCategoryForm();
+            this.refreshCategories();
+        } else {
+            toast.error(result.error);
+        }
+    }
+
+    async populateCategoryEditForm(categoryId) {
+        try {
+            const categoryService = window.app?.services?.categories;
+            if (!categoryService) return;
+
+            const categories = await categoryService.getAll();
+            const category = categories.find(c => c.id.toString() === categoryId.toString());
+            if (!category) return;
+
+            this.editingCategoryId = categoryId;
+            if (this.elements.categoryNombre) this.elements.categoryNombre.value = category.nombre || '';
+            if (this.elements.categoryDescripcion) this.elements.categoryDescripcion.value = category.descripcion || '';
+            if (this.elements.categoryIcono) this.elements.categoryIcono.value = category.icono || '';
+
+            const btnCreate = this.elements.btnCreateCategory;
+            const btnCancel = document.getElementById('btn-cancel-category-edit');
+            if (btnCreate) btnCreate.textContent = 'Actualizar Categoria';
+            if (btnCancel) btnCancel.style.display = 'inline-block';
+
+            // Scroll to form
+            this.elements.formCategory?.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            toast.error('Error al cargar categoria para editar');
+            console.error('Error populating edit form:', error);
+        }
+    }
+
+    async handleUpdateCategory(categoryId, data) {
+        const result = await this.adminService.updateCategory(categoryId, data);
+        if (result.success) {
+            toast.success(result.message || 'Categoria actualizada exitosamente');
+            this.eventEmitter.emit(EVENTS.ADMIN.CATEGORY_UPDATED, { id: categoryId, ...data });
+            this.resetCategoryForm();
+            this.refreshCategories();
+        } else {
+            toast.error(result.error);
+        }
+    }
+
+    resetCategoryForm() {
+        this.editingCategoryId = null;
+        if (this.elements.formCategory) this.elements.formCategory.reset();
+        const btnCreate = this.elements.btnCreateCategory;
+        const btnCancel = document.getElementById('btn-cancel-category-edit');
+        if (btnCreate) btnCreate.textContent = 'Crear Categoria';
+        if (btnCancel) btnCancel.style.display = 'none';
     }
 
     async handleDeleteCategory(categoryId) {
