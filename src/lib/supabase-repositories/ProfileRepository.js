@@ -71,13 +71,17 @@ export class ProfileRepository {
     }
 
     async update(id, profile) {
+        // Dynamically build update object to support any field including rol
+        const updates = { updated_at: new Date().toISOString() };
+        for (const [key, value] of Object.entries(profile)) {
+            if (value !== undefined) {
+                updates[key] = value;
+            }
+        }
+
         const { data, error } = await supabase
             .from(this.table)
-            .update({
-                nombre: profile.nombre,
-                avatar_url: profile.avatar_url,
-                updated_at: new Date().toISOString()
-            })
+            .update(updates)
             .eq('id', id)
             .select()
             .single();
@@ -87,13 +91,17 @@ export class ProfileRepository {
     }
 
     async updateByUserId(userId, profile) {
+        // Dynamically build update object to support any field including rol
+        const updates = { updated_at: new Date().toISOString() };
+        for (const [key, value] of Object.entries(profile)) {
+            if (value !== undefined) {
+                updates[key] = value;
+            }
+        }
+
         const { data, error } = await supabase
             .from(this.table)
-            .update({
-                nombre: profile.nombre,
-                avatar_url: profile.avatar_url,
-                updated_at: new Date().toISOString()
-            })
+            .update(updates)
             .eq('user_id', userId)
             .select()
             .single();
