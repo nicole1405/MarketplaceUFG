@@ -100,6 +100,16 @@ export class ProductController {
         if (this.elements.btnVolverProductos) {
             this.elements.btnVolverProductos.addEventListener('click', () => this.showVendedorInicio());
         }
+
+        // Listen for admin moderation events to refresh product views
+        eventBus.on(EVENTS.ADMIN.PRODUCT_APPROVED, () => {
+            this.renderProducts();
+            this.renderMyProducts();
+        });
+
+        eventBus.on(EVENTS.ADMIN.PRODUCT_REJECTED, () => {
+            this.renderMyProducts();
+        });
     }
 
     showVendedorInicio() {
@@ -470,6 +480,17 @@ export class ProductController {
 
         const estadoLabel = product.estado === 'vendido' ? '<span class="badge-vendido">Vendido</span>' : '';
 
+        // Show revision state badge for pending/rejected products
+        let revisionBadge = '';
+        if (product.estado_revision === 'pendiente') {
+            revisionBadge = '<span class="badge-pendiente" style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Pendiente</span>';
+        } else if (product.estado_revision === 'rechazado') {
+            const motivo = product.motivo_rechazo ? ` - ${UIUtils.escapeHtml(product.motivo_rechazo)}` : '';
+            revisionBadge = `<span class="badge-rechazado" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Rechazado${motivo}</span>`;
+        } else if (product.estado_revision === 'aprobado') {
+            revisionBadge = '<span class="badge-aprobado" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Aprobado</span>';
+        }
+
         item.innerHTML = `
             <div class="producto-item-imagen">${imagenHTML}</div>
             <div class="producto-item-info">
@@ -477,6 +498,7 @@ export class ProductController {
                 <p>Precio: $${parseFloat(product.precio).toFixed(2)}</p>
                 ${categoriaHTML}
                 ${estadoLabel}
+                ${revisionBadge}
             </div>
             <div class="producto-item-actions">
                 <button class="btn-small btn-delete" data-product-id="${product.id}">

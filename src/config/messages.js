@@ -42,6 +42,20 @@ export const MESSAGES = {
     SYSTEM: {
         ERROR_GENERIC: 'Ha ocurrido un error. Por favor, intenta de nuevo',
         CLEAR_DATA_CONFIRM: 'Estas seguro de que deseas eliminar TODOS los datos? Esta accion no se puede deshacer.'
+    },
+    
+    ADMIN: {
+        PRODUCT_APPROVED: 'Producto aprobado exitosamente',
+        PRODUCT_REJECTED: 'Producto rechazado',
+        REJECTION_REASON_REQUIRED: 'El motivo de rechazo es obligatorio',
+        ROLE_CHANGED: 'Rol de usuario actualizado',
+        CATEGORY_CREATED: 'Categoria creada exitosamente',
+        CATEGORY_UPDATED: 'Categoria actualizada exitosamente',
+        CATEGORY_DELETED: 'Categoria eliminada exitosamente',
+        CATEGORY_DELETE_CONFIRM: 'Estas seguro de que deseas eliminar esta categoria?',
+        CATEGORY_NAME_REQUIRED: 'El nombre de la categoria es obligatorio',
+        ROLE_CHANGE_CONFIRM: 'Estas seguro de que deseas cambiar el rol de este usuario?',
+        ACCESS_DENIED: 'Solo los administradores pueden realizar esta accion'
     }
 };
 
