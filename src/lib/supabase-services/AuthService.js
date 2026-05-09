@@ -84,7 +84,8 @@ export class AuthService {
                 user: {
                     id: data.user.id,
                     email: data.user.email,
-                    nombre: this.currentProfile?.nombre || data.user.email.split('@')[0]
+                    nombre: this.currentProfile?.nombre || data.user.email.split('@')[0],
+                    rol: this.currentProfile?.rol || 'anunciante'
                 },
                 message: MESSAGES.AUTH.LOGIN_SUCCESS(this.currentProfile?.nombre || data.user.email)
             };
@@ -144,6 +145,10 @@ export class AuthService {
         return this.currentProfile;
     }
 
+    isAdmin() {
+        return this.currentProfile?.rol === 'admin';
+    }
+
     async updateProfile({ nombre, avatar_url, delete_avatar }) {
         try {
             const profileData = {
@@ -157,8 +162,52 @@ export class AuthService {
                 profileData.avatar_url = avatar_url;
             }
             
+            // Non-admin users cannot change their role
+            const isAdmin = this.isAdmin();
+            if (!isAdmin) {
+                delete profileData.rol;
+            }
+            
             const updated = await this.profileRepository.updateByUserId(this.currentUser.id, profileData);
             this.currentProfile = updated;
+            return {
+                success: true,
+                profile: updated
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async updateUserRole(userId, newRol) {
+        try {
+            if (!this.isAdmin()) {
+                return {
+                    success: false,
+                    error: 'Only administrators can change user roles'
+                };
+            }
+
+            if (newRol !== 'admin' && newRol !== 'anunciante') {
+                return {
+                    success: false,
+                    error: 'Invalid role. Must be "admin" or "anunciante"'
+                };
+            }
+
+            const updated = await this.profileRepository.updateByUserId(userId, {
+                rol: newRol,
+                updated_at: new Date().toISOString()
+            });
+
+            // If admin changed their own role, update currentProfile
+            if (userId === this.currentUser?.id) {
+                this.currentProfile = updated;
+            }
+
             return {
                 success: true,
                 profile: updated
