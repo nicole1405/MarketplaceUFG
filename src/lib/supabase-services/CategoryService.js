@@ -3,11 +3,12 @@
  * Manages product categories
  */
 
-import { supabase } from '../supabase.js';
+import { MESSAGES } from '../../config/messages.js';
 
 export class CategoryService {
-    constructor(categoryRepository) {
+    constructor(categoryRepository, authService) {
         this.categoryRepository = categoryRepository;
+        this.authService = authService;
     }
 
     async getAll() {
@@ -20,6 +21,76 @@ export class CategoryService {
 
     async getByName(nombre) {
         return await this.categoryRepository.getByName(nombre);
+    }
+
+    async create(data) {
+        this.authService.requireAdmin();
+
+        if (!data.nombre || data.nombre.trim() === '') {
+            return {
+                success: false,
+                error: 'El nombre de la categoria es obligatorio'
+            };
+        }
+
+        try {
+            const category = await this.categoryRepository.create({
+                nombre: data.nombre.trim(),
+                descripcion: data.descripcion || null,
+                icono: data.icono || null
+            });
+
+            return {
+                success: true,
+                category,
+                message: 'Categoria creada exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async update(id, data) {
+        this.authService.requireAdmin();
+
+        try {
+            const category = await this.categoryRepository.update(id, {
+                nombre: data.nombre?.trim(),
+                descripcion: data.descripcion,
+                icono: data.icono
+            });
+
+            return {
+                success: true,
+                category,
+                message: 'Categoria actualizada exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async delete(id) {
+        this.authService.requireAdmin();
+
+        try {
+            await this.categoryRepository.delete(id);
+            return {
+                success: true,
+                message: 'Categoria eliminada exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
 }
 

@@ -100,15 +100,23 @@ export class ProductService {
         }
 
         try {
-            const updated = await this.productRepository.update(productId, {
+            const updateData = {
                 nombre: productData.nombre,
                 precio: parseFloat(productData.precio),
                 descripcion: productData.descripcion,
                 imagenes_urls: productData.imagenes_urls,
                 imagenes_paths: productData.imagenes_paths,
                 categoria_id: productData.categoria_id,
-                estado: productData.estado
-            });
+                estado: productData.estado,
+                updated_at: new Date().toISOString()
+            };
+
+            // If product was approved and owner edits it, reset to pending for re-review
+            if (product.estado_revision === 'aprobado') {
+                updateData.estado_revision = 'pendiente';
+            }
+
+            const updated = await this.productRepository.update(productId, updateData);
 
             return {
                 success: true,

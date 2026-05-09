@@ -121,6 +121,9 @@
                         Chats
                         <span id="badge-mensajes" class="badge">0</span>
                     </button>
+                    <button class="btn-secondary" id="nav-admin" style="display: none;">
+                        Admin
+                    </button>
                     <div class="user-menu">
                         <div class="user-profile" id="user-profile">
                             <img id="user-avatar" class="user-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjOTk5Ij48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iOTAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="Avatar">
@@ -304,6 +307,102 @@
                 </div>
             </div>
         </section>
+
+        <!-- Vista de Admin -->
+        <section class="main-content" id="vista-admin" style="display: none;">
+            <div class="container">
+                <div class="admin-panel">
+                    <h2>Panel de Administracion</h2>
+
+                    <!-- Productos Pendientes -->
+                    <div class="admin-section">
+                        <div class="admin-section-header">
+                            <h3>Productos Pendientes</h3>
+                            <button id="btn-load-pending" class="btn-secondary btn-admin-refresh">
+                                Actualizar
+                            </button>
+                        </div>
+                        <div id="admin-pending-products-list" class="admin-list">
+                            <p class="empty-message">Haz clic en "Actualizar" para cargar productos pendientes</p>
+                        </div>
+                    </div>
+
+                    <!-- Gestion de Usuarios -->
+                    <div class="admin-section">
+                        <div class="admin-section-header">
+                            <h3>Gestion de Usuarios</h3>
+                            <button id="btn-load-users" class="btn-secondary btn-admin-refresh">
+                                Actualizar
+                            </button>
+                        </div>
+                        <div id="admin-users-list" class="admin-list">
+                            <p class="empty-message">Haz clic en "Actualizar" para cargar usuarios</p>
+                        </div>
+                    </div>
+
+                    <!-- Gestion de Categorias -->
+                    <div class="admin-section">
+                        <div class="admin-section-header">
+                            <h3>Gestion de Categorias</h3>
+                            <button id="btn-load-categories" class="btn-secondary btn-admin-refresh">
+                                Actualizar
+                            </button>
+                        </div>
+
+                        <!-- Formulario nueva categoria -->
+                        <form id="admin-form-category" class="admin-category-form">
+                            <div class="form-group">
+                                <label for="admin-category-nombre">Nombre *</label>
+                                <input type="text" id="admin-category-nombre" placeholder="Nombre de la categoria" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-category-descripcion">Descripcion</label>
+                                <input type="text" id="admin-category-descripcion" placeholder="Descripcion (opcional)">
+                            </div>
+                            <div class="form-group">
+                                <label for="admin-category-icono">Icono</label>
+                                <input type="text" id="admin-category-icono" placeholder="Emoji (ej: 📱)">
+                            </div>
+                            <button type="submit" id="btn-create-category" class="btn-primary">
+                                Crear Categoria
+                            </button>
+                            <button type="button" id="btn-cancel-category-edit" class="btn-secondary" style="display: none;">
+                                Cancelar
+                            </button>
+                        </form>
+
+                        <div id="admin-categories-list" class="admin-list">
+                            <p class="empty-message">Haz clic en "Actualizar" para cargar categorias</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de Rechazo de Producto -->
+    <div id="admin-reject-modal" class="modal">
+        <div class="modal-content modal-reject">
+            <span class="close" id="btn-close-reject-modal">&times;</span>
+            <div class="reject-header">
+                <h2>Rechazar Producto</h2>
+                <p>Indica el motivo del rechazo. El vendedor podra ver esta informacion.</p>
+            </div>
+            <form id="form-reject-product">
+                <div class="form-group">
+                    <label for="admin-reject-reason">Motivo de Rechazo *</label>
+                    <textarea id="admin-reject-reason" rows="4" placeholder="Explica por que el producto no cumple las normas..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="btn-confirm-reject" class="btn-primary btn-danger">
+                        Confirmar Rechazo
+                    </button>
+                    <button type="button" id="btn-cancel-reject" class="btn-secondary">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Modal de Detalle del Producto -->

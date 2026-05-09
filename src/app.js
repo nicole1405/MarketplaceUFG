@@ -19,12 +19,14 @@ import {
     ProductService, 
     ChatService,
     CategoryService,
-    StorageService
+    StorageService,
+    AdminService
 } from './lib/supabase-services/index.js';
 import { eventBus, toast } from './core/utils/index.js';
 import { AuthController } from './features/auth/AuthController.js';
 import { ProductController } from './features/products/ProductController.js';
 import { ChatController } from './features/chat/ChatController.js';
+import { AdminController } from './features/admin/AdminController.js';
 
 class Application {
     constructor() {
@@ -88,6 +90,12 @@ class Application {
                 this.repositories.messages,
                 this.repositories.products,
                 authService
+            ),
+            admin: new AdminService(
+                authService,
+                this.repositories.products,
+                this.repositories.profiles,
+                this.repositories.categories
             )
         };
     }
@@ -96,7 +104,8 @@ class Application {
         this.controllers = {
             auth: new AuthController(this.services.auth, this.services.storage),
             products: new ProductController(this.services.products, this.services.categories, this.services.storage, this.services.auth),
-            chat: new ChatController(this.services.chat, this.services.auth)
+            chat: new ChatController(this.services.chat, this.services.auth),
+            admin: new AdminController(this.services.admin, eventBus)
         };
     }
 
@@ -106,6 +115,13 @@ class Application {
         eventBus.on(EVENTS.AUTH.SESSION_RESTORED, () => this.onAuthenticated());
         eventBus.on(EVENTS.UI.VIEW_CHANGED, (view) => this.switchView(view));
         
+        // Admin moderation events
+        eventBus.on(EVENTS.ADMIN.PRODUCT_APPROVED, () => this.controllers.products.renderProducts());
+        eventBus.on(EVENTS.ADMIN.PRODUCT_REJECTED, () => this.controllers.products.renderMyProducts());
+        eventBus.on(EVENTS.ADMIN.CATEGORY_CREATED, () => this.loadCategories());
+        eventBus.on(EVENTS.ADMIN.CATEGORY_UPDATED, () => this.loadCategories());
+        eventBus.on(EVENTS.ADMIN.CATEGORY_DELETED, () => this.loadCategories());
+        
         this.bindNavigationButtons();
     }
 
@@ -113,7 +129,8 @@ class Application {
         const navButtons = {
             'nav-productos': 'productos',
             'nav-vendedor': 'vendedor',
-            'nav-mensajes': 'mensajes'
+            'nav-mensajes': 'mensajes',
+            'nav-admin': 'admin'
         };
 
         for (const [id, view] of Object.entries(navButtons)) {
@@ -160,6 +177,12 @@ class Application {
             userAvatarEl.src = avatarUrl || defaultAvatar;
         }
 
+        // Show/hide admin navigation based on role
+        const navAdmin = document.getElementById('nav-admin');
+        if (navAdmin) {
+            navAdmin.style.display = this.services.auth.isAdmin() ? 'inline-flex' : 'none';
+        }
+
         await this.loadCategories();
         
         this.controllers.products.renderProducts();
@@ -174,6 +197,7 @@ class Application {
         
         const userAvatar = document.getElementById('user-avatar');
         const userName = document.getElementById('user-name');
+        const navAdmin = document.getElementById('nav-admin');
         
         if (userAvatar) {
             userAvatar.src = '';
@@ -182,10 +206,13 @@ class Application {
         if (userName) {
             userName.textContent = 'Usuario';
         }
+        if (navAdmin) {
+            navAdmin.style.display = 'none';
+        }
     }
 
     switchView(viewName) {
-        const views = ['vista-productos', 'vista-vendedor', 'vista-mensajes'];
+        const views = ['vista-productos', 'vista-vendedor', 'vista-mensajes', 'vista-admin'];
         views.forEach(id => {
             const element = document.getElementById(id);
             if (element) {
@@ -205,6 +232,10 @@ class Application {
             } else if (viewName === 'mensajes') {
                 this.controllers.chat.renderConversations();
                 this.controllers.chat.updateBadge();
+            } else if (viewName === 'admin') {
+                this.controllers.admin.loadPendingProducts();
+                this.controllers.admin.loadUsers();
+                this.controllers.admin.loadCategories();
             }
         }
 
@@ -215,7 +246,8 @@ class Application {
         const navMap = {
             'productos': 'nav-productos',
             'vendedor': 'nav-vendedor',
-            'mensajes': 'nav-mensajes'
+            'mensajes': 'nav-mensajes',
+            'admin': 'nav-admin'
         };
 
         Object.values(navMap).forEach(id => {
