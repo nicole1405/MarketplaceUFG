@@ -365,9 +365,6 @@ export class AuthService {
                 };
             }
 
-            // Clear the session so user logs in with new password
-            await this.logout();
-
             return {
                 success: true,
                 message: MESSAGES.AUTH.RESET_PASSWORD_SUCCESS
@@ -386,29 +383,6 @@ export class AuthService {
      * Supabase redirects with #access_token=...type=recovery after email link click.
      * Must capture the hash early since supabase-js clears it after processing.
      */
-    async handlePasswordRecovery() {
-        try {
-            // Capture hash from sessionStorage (saved in app.js before supabase processes it)
-            const isRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
-            sessionStorage.removeItem('ufg_recovery_flow');
-
-            if (!isRecovery) {
-                return false;
-            }
-
-            const { data, error } = await supabase.auth.getSession();
-
-            if (error || !data.session) {
-                return false;
-            }
-
-            this.currentUser = data.session.user;
-            return true;
-        } catch (error) {
-            console.error('[handlePasswordRecovery] Error:', error);
-            return false;
-        }
-    }
 
     async logout() {
         try {

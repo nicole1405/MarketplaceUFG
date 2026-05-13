@@ -48,7 +48,10 @@ export class AuthController {
             perfilEmail: document.getElementById('perfil-email'),
             perfilAvatar: document.getElementById('perfil-avatar'),
             perfilAvatarPreview: document.getElementById('perfil-avatar-preview'),
-            btnEliminarFoto: document.getElementById('btn-eliminar-foto')
+            btnEliminarFoto: document.getElementById('btn-eliminar-foto'),
+            perfilPassword: document.getElementById('perfil-password'),
+            perfilPasswordConfirm: document.getElementById('perfil-password-confirm'),
+            btnChangePassword: document.getElementById('btn-change-password')
         };
     }
 
@@ -57,7 +60,6 @@ export class AuthController {
         const loginFormElement = this.elements.loginForm?.querySelector('form');
         const registerFormElement = this.elements.registerForm?.querySelector('form');
         const forgotFormElement = this.elements.forgotForm?.querySelector('form');
-        const resetFormElement = this.elements.resetForm?.querySelector('form');
 
         if (loginFormElement) {
             loginFormElement.addEventListener('submit', (e) => this.handleLogin(e));
@@ -69,10 +71,6 @@ export class AuthController {
 
         if (forgotFormElement) {
             forgotFormElement.addEventListener('submit', (e) => this.handleForgotPassword(e));
-        }
-
-        if (resetFormElement) {
-            resetFormElement.addEventListener('submit', (e) => this.handleResetPassword(e));
         }
 
         // Links para cambiar entre formularios
@@ -127,6 +125,11 @@ export class AuthController {
         // Delete profile photo
         if (this.elements.btnEliminarFoto) {
             this.elements.btnEliminarFoto.addEventListener('click', () => this.handleDeleteProfilePhoto());
+        }
+
+        // Change password
+        if (this.elements.btnChangePassword) {
+            this.elements.btnChangePassword.addEventListener('click', () => this.handleChangePassword());
         }
 
         // Close modal on backdrop click
@@ -308,17 +311,16 @@ export class AuthController {
     }
 
     async checkSession() {
-        // Check if user came from a password recovery link
-        const isRecovery = await this.authService.handlePasswordRecovery();
-        if (isRecovery) {
-            // Show the reset password form (stay on auth screen, don't go to app)
-            this.showLoginScreen(); // Show auth screen with just the reset form
-            this.showResetPassword();
-            return false; // Don't trigger onAuthenticated
-        }
-
         const hasSession = await this.authService.initialize();
         if (hasSession) {
+            // Check if this was a password recovery login
+            const wasRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
+            sessionStorage.removeItem('ufg_recovery_flow');
+            
+            if (wasRecovery) {
+                toast.success('Iniciaste sesión con el link de recuperación. Podés cambiar tu contraseña desde tu perfil.');
+            }
+
             this.showApp();
             eventBus.emit(EVENTS.AUTH.SESSION_RESTORED, this.authService.getCurrentUser());
             return true;
@@ -418,33 +420,6 @@ export class AuthController {
         });
     }
 
-    async handleResetPassword(event) {
-        event.preventDefault();
-        
-        const password = this.elements.resetPassword?.value;
-        const passwordConfirm = this.elements.resetPasswordConfirm?.value;
-
-        if (!password || password.length < 6) {
-            toast.error('La contraseña debe tener al menos 6 caracteres');
-            return;
-        }
-
-        if (password !== passwordConfirm) {
-            toast.error(MESSAGES.AUTH.PASSWORD_MISMATCH);
-            return;
-        }
-
-        const result = await this.authService.updatePassword(password);
-        
-        if (result.success) {
-            toast.success(result.message);
-            this.authService.logout();
-            this.showLoginScreen();
-            this.clearResetForm();
-        } else {
-            toast.error(result.error);
-        }
-    }
 
     logout() {
         if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
@@ -465,9 +440,6 @@ export class AuthController {
         if (this.elements.forgotForm) {
             this.elements.forgotForm.style.display = 'none';
         }
-        if (this.elements.resetForm) {
-            this.elements.resetForm.style.display = 'none';
-        }
     }
 
     showRegister() {
@@ -479,9 +451,6 @@ export class AuthController {
         }
         if (this.elements.forgotForm) {
             this.elements.forgotForm.style.display = 'none';
-        }
-        if (this.elements.resetForm) {
-            this.elements.resetForm.style.display = 'none';
         }
     }
 
@@ -503,25 +472,8 @@ export class AuthController {
             
             this.elements.forgotForm.style.display = 'block';
         }
-        if (this.elements.resetForm) {
-            this.elements.resetForm.style.display = 'none';
-        }
     }
 
-    showResetPassword() {
-        if (this.elements.loginForm) {
-            this.elements.loginForm.style.display = 'none';
-        }
-        if (this.elements.registerForm) {
-            this.elements.registerForm.style.display = 'none';
-        }
-        if (this.elements.forgotForm) {
-            this.elements.forgotForm.style.display = 'none';
-        }
-        if (this.elements.resetForm) {
-            this.elements.resetForm.style.display = 'block';
-        }
-    }
 
     showApp() {
         if (this.elements.authScreen) {
@@ -556,12 +508,6 @@ export class AuthController {
         if (switchLink) switchLink.style.display = '';
     }
 
-    clearResetForm() {
-        const form = this.elements.resetForm?.querySelector('form');
-        if (form) {
-            form.reset();
-        }
-    }
 
     clearLoginForm() {
         const form = this.elements.loginForm?.querySelector('form');
@@ -706,6 +652,42 @@ export class AuthController {
         }
         
         toast.info('Foto eliminada. Guarda los cambios para aplicar.');
+    }
+
+    async handleChangePassword() {
+        const password = this.elements.perfilPassword?.value;
+        const confirm = this.elements.perfilPasswordConfirm?.value;
+
+        if (!password || password.length < 6) {
+            toast.error('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        if (password !== confirm) {
+            toast.error('Las contraseñas no coinciden');
+            return;
+        }
+
+        const btn = this.elements.btnChangePassword;
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Actualizando...';
+        }
+
+        const result = await this.authService.updatePassword(password);
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Actualizar Contraseña';
+        }
+
+        if (result.success) {
+            toast.success('Contraseña actualizada correctamente');
+            if (this.elements.perfilPassword) this.elements.perfilPassword.value = '';
+            if (this.elements.perfilPasswordConfirm) this.elements.perfilPasswordConfirm.value = '';
+        } else {
+            toast.error(result.error);
+        }
     }
 }
 

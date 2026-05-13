@@ -1811,6 +1811,23 @@ body.dark-mode .modal-perfil .form-group input:focus {
     cursor: not-allowed;
 }
 
+.perfil-password-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--border);
+}
+
+.perfil-section-title {
+    color: var(--text-dark);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.perfil-password-section .form-group {
+    margin-bottom: 1rem;
+}
+
 .modal-perfil .form-actions {
     display: flex;
     gap: 1rem;
