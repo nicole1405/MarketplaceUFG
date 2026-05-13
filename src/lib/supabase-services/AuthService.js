@@ -48,6 +48,45 @@ export class AuthService {
                 options: {
                     data: { nombre },
                     emailRedirectTo: this.getRedirectUrl()
+                }
+            });
+
+            if (error) {
+                if (error.message.includes('already been registered')) {
+                    return {
+                        success: false,
+                        error: MESSAGES.AUTH.REGISTER_ERROR_EMAIL_EXISTS
+                    };
+                }
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+
+            const needsConfirmation = !data.user?.email_confirmed_at;
+
+            if (needsConfirmation) {
+                return {
+                    success: true,
+                    needsConfirmation: true,
+                    message: MESSAGES.AUTH.REGISTER_NEEDS_CONFIRMATION,
+                    user: data.user
+                };
+            }
+
+            return {
+                success: true,
+                needsConfirmation: false,
+                message: MESSAGES.AUTH.REGISTER_SUCCESS,
+                user: data.user
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
 
     async login(email, password) {
