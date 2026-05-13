@@ -51,7 +51,7 @@ describe('AdminController - Unit Tests', () => {
         vi.clearAllMocks();
         vi.resetModules();
 
-        // Set up DOM
+        // Set up DOM with new category management UI
         document.body.innerHTML = `
             <div id="vista-admin">
                 <div id="admin-pending-products-list"></div>
@@ -60,12 +60,21 @@ describe('AdminController - Unit Tests', () => {
                 <button id="btn-load-users">Actualizar</button>
                 <div id="admin-categories-list"></div>
                 <button id="btn-load-categories">Actualizar</button>
-                <form id="admin-form-category">
-                    <input id="admin-category-nombre" value="">
-                    <input id="admin-category-descripcion" value="">
-                    <input id="admin-category-icono" value="">
-                    <button type="submit" id="btn-create-category">Crear</button>
-                </form>
+                <button id="btn-toggle-category-form">Nueva Categoria</button>
+                <button id="btn-close-category-form">Cerrar</button>
+                <div id="admin-category-form-container" style="display: none;">
+                    <div class="form-header">
+                        <h4 id="admin-category-form-title">Crear Nueva Categoria</h4>
+                    </div>
+                    <form id="admin-form-category">
+                        <input id="admin-category-nombre" value="">
+                        <input id="admin-category-descripcion" value="">
+                        <input id="admin-category-icono" value="">
+                        <button type="submit" id="btn-create-category">Crear</button>
+                    </form>
+                </div>
+                <input id="admin-category-search" type="text" value="">
+                <button id="btn-cancel-category-edit" style="display: none;">Cancelar</button>
                 <div id="admin-reject-modal" style="display: none;">
                     <textarea id="admin-reject-reason"></textarea>
                     <button id="btn-confirm-reject">Confirmar</button>
@@ -132,7 +141,7 @@ describe('AdminController - Unit Tests', () => {
             expect(list.innerHTML).toContain('iPhone 14');
             expect(list.innerHTML).toContain('btn-approve');
             expect(list.innerHTML).toContain('btn-reject');
-            expect(list.innerHTML).toContain('badge-pendiente');
+            expect(list.innerHTML).toContain('rol-badge-pendiente');
         });
 
         it('debe escapar HTML en nombres de productos', async () => {
@@ -182,8 +191,8 @@ describe('AdminController - Unit Tests', () => {
             const list = document.getElementById('admin-users-list');
             expect(list.innerHTML).toContain('Admin User');
             expect(list.innerHTML).toContain('Seller User');
-            expect(list.innerHTML).toContain('badge-admin');
-            expect(list.innerHTML).toContain('badge-anunciante');
+            expect(list.innerHTML).toContain('rol-badge-admin');
+            expect(list.innerHTML).toContain('rol-badge-anunciante');
         });
 
         it('debe mostrar boton de cambio de rol correcto segun rol actual', async () => {
@@ -390,7 +399,8 @@ describe('AdminController - Unit Tests', () => {
             expect(mockAdminService.createCategory).toHaveBeenCalledWith({
                 nombre: 'Nueva Categoria',
                 descripcion: 'Descripcion',
-                icono: '🆕'
+                icono: '🆕',
+                orden: 1
             });
             expect(mockToast.success).toHaveBeenCalledWith('Categoria creada exitosamente');
         });
