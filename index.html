@@ -892,6 +892,12 @@
     </div>
 </div>
     <!-- Scripts -->
+    <script>
+        // Capturar hash de recovery ANTES de que supabase-js lo procese
+        if (window.location.hash && window.location.hash.includes('type=recovery')) {
+            sessionStorage.setItem('ufg_recovery_flow', 'true');
+        }
+    </script>
     <script type="module" src="src/app.js"></script>
 </body>
 </html>
