@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Dark Mode Toggle (visible on auth screen too) -->
+    <button class="btn-toggle-theme-auth" id="btn-toggle-theme-auth" title="Cambiar tema">
+        🌙
+    </button>
+
     <!-- Pantalla de Login/Registro -->
     <div id="auth-screen" class="auth-screen">
         <div class="auth-container">
@@ -40,6 +45,9 @@
                     <button type="submit" class="btn-primary btn-block">
                         Iniciar Sesión
                     </button>
+                    <div class="auth-extra-links">
+                        <a href="#" id="link-forgot-password" class="auth-forgot-link">¿Olvidaste tu contraseña?</a>
+                    </div>
                 </form>
                 <p class="auth-switch">
                     ¿No tienes cuenta? 
@@ -98,6 +106,60 @@
                     <a href="#" id="link-to-login">Inicia sesión aquí</a>
                 </p>
             </div>
+
+            <!-- Formulario de Olvidé Contraseña -->
+            <div id="forgot-form" class="auth-form" style="display: none;">
+                <h2>Recuperar Contraseña</h2>
+                <form>
+                    <p class="auth-description">Ingresá tu correo electrónico y te enviaremos un link para restablecer tu contraseña.</p>
+                    <div class="form-group">
+                        <label for="forgot-email">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="forgot-email" 
+                            placeholder="ejemplo@ufg.edu.sv"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        Enviar Link de Recuperación
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    <a href="#" id="link-back-to-login">← Volver a Iniciar Sesión</a>
+                </p>
+            </div>
+
+            <!-- Formulario de Restablecer Contraseña (después del link) -->
+            <div id="reset-form" class="auth-form" style="display: none;">
+                <h2>Nueva Contraseña</h2>
+                <form>
+                    <p class="auth-description">Elegí una nueva contraseña para tu cuenta.</p>
+                    <div class="form-group">
+                        <label for="reset-password">Nueva Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="reset-password" 
+                            placeholder="Mínimo 6 caracteres"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="reset-password-confirm">Confirmar Nueva Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="reset-password-confirm" 
+                            placeholder="Repite tu contraseña"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        Actualizar Contraseña
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -129,6 +191,9 @@
                             <img id="user-avatar" class="user-avatar" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjOTk5Ij48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjUwIiBjeT0iOTAiIHI9IjIwIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="Avatar">
                             <span class="user-name" id="user-name">Usuario</span>
                         </div>
+                        <button class="btn-toggle-theme-small" id="btn-toggle-theme" title="Cambiar tema">
+                            🌙
+                        </button>
                         <button class="btn-logout" onclick="window.app.controllers.auth.logout()">
                             Salir
                         </button>
@@ -314,70 +379,162 @@
                 <div class="admin-panel">
                     <h2>Panel de Administracion</h2>
 
-                    <!-- Productos Pendientes -->
-                    <div class="admin-section">
-                        <div class="admin-section-header">
-                            <h3>Productos Pendientes</h3>
-                            <button id="btn-load-pending" class="btn-secondary btn-admin-refresh">
-                                Actualizar
-                            </button>
-                        </div>
-                        <div id="admin-pending-products-list" class="admin-list">
-                            <p class="empty-message">Haz clic en "Actualizar" para cargar productos pendientes</p>
-                        </div>
+                    <!-- Pestañas de navegación -->
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-tab="productos-pendientes">
+                            📦 Productos Pendientes
+                        </button>
+                        <button class="admin-tab-btn" data-tab="gestion-categorias">
+                            📁 Categorías
+                        </button>
+                        <button class="admin-tab-btn" data-tab="gestion-usuarios">
+                            👥 Usuarios
+                        </button>
                     </div>
 
-                    <!-- Gestion de Usuarios -->
-                    <div class="admin-section">
-                        <div class="admin-section-header">
-                            <h3>Gestion de Usuarios</h3>
-                            <button id="btn-load-users" class="btn-secondary btn-admin-refresh">
-                                Actualizar
-                            </button>
-                        </div>
-                        <div id="admin-users-list" class="admin-list">
-                            <p class="empty-message">Haz clic en "Actualizar" para cargar usuarios</p>
-                        </div>
-                    </div>
-
-                    <!-- Gestion de Categorias -->
-                    <div class="admin-section">
-                        <div class="admin-section-header">
-                            <h3>Gestion de Categorias</h3>
-                            <button id="btn-load-categories" class="btn-secondary btn-admin-refresh">
-                                Actualizar
-                            </button>
+                    <!-- Contenido de las pestañas -->
+                    <div class="admin-tabs-content">
+                        <!-- Pestaña: Productos Pendientes -->
+                        <div class="admin-tab-panel active" id="tab-productos-pendientes">
+                            <div class="admin-section">
+                                <div class="admin-section-header">
+                                    <h3>Productos Pendientes de Aprobación</h3>
+                                    <button id="btn-load-pending" class="btn-secondary btn-admin-refresh">
+                                        Actualizar
+                                    </button>
+                                </div>
+                                <div id="admin-pending-products-list" class="admin-list">
+                                    <p class="empty-message">Haz clic en "Actualizar" para cargar productos pendientes</p>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Formulario nueva categoria -->
-                        <form id="admin-form-category" class="admin-category-form">
-                            <div class="form-group">
-                                <label for="admin-category-nombre">Nombre *</label>
-                                <input type="text" id="admin-category-nombre" placeholder="Nombre de la categoria" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="admin-category-descripcion">Descripcion</label>
-                                <input type="text" id="admin-category-descripcion" placeholder="Descripcion (opcional)">
-                            </div>
-                            <div class="form-group">
-                                <label for="admin-category-icono">Icono</label>
-                                <input type="text" id="admin-category-icono" placeholder="Emoji (ej: 📱)">
-                            </div>
-                            <button type="submit" id="btn-create-category" class="btn-primary">
-                                Crear Categoria
-                            </button>
-                            <button type="button" id="btn-cancel-category-edit" class="btn-secondary" style="display: none;">
-                                Cancelar
-                            </button>
-                        </form>
+                        <!-- Pestaña: Gestión de Categorías -->
+                        <div class="admin-tab-panel" id="tab-gestion-categorias">
+                            <div class="admin-section">
+                                <div class="admin-section-header">
+                                    <h3>Gestión de Categorías</h3>
+                                    <div class="admin-header-actions">
+                                        <button id="btn-toggle-category-form" class="btn-action btn-success">
+                                            Nueva Categoría
+                                        </button>
+                                        <button id="btn-edit-category-order" class="btn-action btn-secondary-dark" title="Reordenar categorías">
+                                            Editar Orden
+                                        </button>
+                                        <button id="btn-load-categories" class="btn-secondary btn-admin-refresh" style="display: none;">
+                                            Actualizar
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <div id="admin-categories-list" class="admin-list">
-                            <p class="empty-message">Haz clic en "Actualizar" para cargar categorias</p>
+                                <!-- Formulario nueva categoria (oculto por defecto) -->
+                                <div id="admin-category-form-container" class="admin-category-form-container" style="display: none;">
+                                    <div class="form-header">
+                                        <h4 id="admin-category-form-title">Crear Nueva Categoría</h4>
+                                        <button type="button" id="btn-close-category-form" class="btn-icon btn-close-form" title="Cerrar formulario">
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <form id="admin-form-category" class="admin-category-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="admin-category-nombre">Nombre *</label>
+                                                <input type="text" id="admin-category-nombre" placeholder="Nombre de la categoria" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="admin-category-icono">Icono (Emoji)</label>
+                                                <input type="text" id="admin-category-icono" placeholder="📱" maxlength="10">
+                                                <p class="form-hint">Dejá vacío si no querés usar ícono</p>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="admin-category-descripcion">Descripcion</label>
+                                            <input type="text" id="admin-category-descripcion" placeholder="Descripcion (opcional)">
+                                        </div>
+                                        <div class="form-actions">
+                                            <button type="submit" id="btn-create-category" class="btn-primary">
+                                                Crear Categoria
+                                            </button>
+                                            <button type="button" id="btn-cancel-category-edit" class="btn-secondary" style="display: none;">
+                                                Cancelar Edicion
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Buscador de categorias -->
+                                <div class="admin-search-container">
+                                    <input 
+                                        type="text" 
+                                        id="admin-category-search" 
+                                        class="admin-search-input"
+                                        placeholder="🔍 Buscar categoría por nombre..."
+                                    >
+                                </div>
+
+                                <div id="admin-categories-list" class="admin-list">
+                                    <p class="empty-message">Haz clic en "Nueva Categoría" para crear una, o "Actualizar" para cargar categorias</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pestaña: Gestión de Usuarios -->
+                        <div class="admin-tab-panel" id="tab-gestion-usuarios">
+                            <div class="admin-section">
+                                <div class="admin-section-header">
+                                    <h3>Gestión de Usuarios</h3>
+                                    <button id="btn-load-users" class="btn-action btn-secondary-dark">
+                                        Actualizar
+                                    </button>
+                                </div>
+
+                                <!-- Buscador de usuarios -->
+                                <div class="admin-search-container">
+                                    <input 
+                                        type="text" 
+                                        id="admin-user-search" 
+                                        class="admin-search-input"
+                                        placeholder=" 🔍 Buscar usuario por correo electrónico..."
+                                    >
+                                </div>
+
+                                <div id="admin-users-list" class="admin-list">
+                                    <p class="empty-message">Haz clic en "Actualizar" para cargar usuarios</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <h4>Marketplace UFG</h4>
+                        <p>Conectando emprendedores universitarios</p>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Enlaces Legales</h4>
+                        <ul class="footer-links">
+                            <li><a href="#" id="link-terminos" class="footer-link">Términos de Uso</a></li>
+                            <li><a href="#" id="link-privacidad" class="footer-link">Política de Privacidad</a></li>
+                            <li><a href="#" id="link-cookies" class="footer-link">Política de Cookies</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Contacto</h4>
+                        <p>Universidad Francisco Gavidia</p>
+                        <p>marketplace@ufg.edu.sv</p>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2026 Marketplace UFG. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- Modal de Rechazo de Producto -->
@@ -402,6 +559,20 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de Revision de Producto Pendiente -->
+    <div id="modal-review-product" class="modal">
+        <div class="modal-content modal-review-content">
+            <span class="close btn-close-review">&times;</span>
+            <div class="review-header">
+                <h2>Revisar Producto</h2>
+                <p class="review-subtitle">Revisa los detalles del producto antes de decidir</p>
+            </div>
+            <div id="review-product-detail" class="review-body">
+                <!-- Se carga dinámicamente -->
+            </div>
         </div>
     </div>
 
@@ -449,6 +620,274 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de Términos de Uso -->
+    <div id="modal-terminos" class="modal modal-legal">
+        <div class="modal-content modal-legal-content">
+            <span class="close btn-close-legal">&times;</span>
+            <div class="legal-header">
+                <h2>📋 Términos de Uso</h2>
+                <p class="legal-last-updated">Última actualización: Enero 2026</p>
+            </div>
+            <div class="legal-body">
+                <h3>1. Aceptación de los Términos</h3>
+                <p>Al acceder y utilizar Marketplace UFG, aceptas estar obligado por estos Términos de Uso. Si no estás de acuerdo con alguno de estos términos, no debes utilizar esta plataforma.</p>
+
+                <h3>2. Descripción del Servicio</h3>
+                <p>Marketplace UFG es una plataforma que conecta a estudiantes y miembros de la Universidad Francisco Gavidia para facilitar la compra y venta de productos. La plataforma actúa como intermediario y no se hace responsable de las transacciones entre usuarios.</p>
+
+                <h3>3. Elegibilidad</h3>
+                <p>Solo pueden utilizar esta plataforma:</p>
+                <ul>
+                    <li>Estudiantes activos de la UFG</li>
+                    <li>Personal administrativo y docente de la UFG</li>
+                    <li>Egresados con credenciales válidas</li>
+                </ul>
+
+                <h3>4. Publicación de Productos</h3>
+                <p>Los usuarios que deseen publicar productos deben:</p>
+                <ul>
+                    <li>Proporcionar información veraz y precisa sobre los productos</li>
+                    <li>Incluir fotografías reales del producto</li>
+                    <li>Establecer precios en dólares estadounidenses (USD)</li>
+                    <li>No publicar productos prohibidos o ilegales</li>
+                </ul>
+
+                <h3>5. Productos Prohibidos</h3>
+                <p>No está permitido publicar:</p>
+                <ul>
+                    <li>Productos ilegales o de contrabando</li>
+                    <li>Armas, municiones o explosivos</li>
+                    <li>Drogas o sustancias controladas</li>
+                    <li>Productos robados o hurtados</li>
+                    <li>Material con derechos de autor sin autorización</li>
+                    <li>Productos que violen políticas universitarias</li>
+                </ul>
+
+                <h3>6. Moderación de Contenido</h3>
+                <p>La administración de Marketplace UFG se reserva el derecho de:</p>
+                <ul>
+                    <li>Revisar y aprobar todas las publicaciones antes de ser visibles</li>
+                    <li>Rechazar publicaciones que no cumplan con las normas</li>
+                    <li>Eliminar contenido inapropiado sin previo aviso</li>
+                    <li>Suspender o terminar cuentas de usuarios que violen estos términos</li>
+                </ul>
+
+                <h3>7. Transacciones y Pagos</h3>
+                <p>Las transacciones se realizan directamente entre comprador y vendedor. Marketplace UFG:</p>
+                <ul>
+                    <li>No procesa pagos ni transacciones financieras</li>
+                    <li>No garantiza el cumplimiento de las transacciones</li>
+                    <li>Recomienda realizar intercambios en lugares seguros dentro del campus</li>
+                </ul>
+
+                <h3>8. Responsabilidades del Usuario</h3>
+                <p>Los usuarios son responsables de:</p>
+                <ul>
+                    <li>Verificar la autenticidad y estado de los productos</li>
+                    <li>Acordar métodos de pago y entrega seguros</li>
+                    <li>Resolver disputas directamente con la otra parte</li>
+                    <li>Reportar actividades sospechosas a la administración</li>
+                </ul>
+
+                <h3>9. Limitación de Responsabilidad</h3>
+                <p>Marketplace UFG y la Universidad Francisco Gavidia no se responsabilizan por:</p>
+                <ul>
+                    <li>Daños o perjuicios derivados de transacciones entre usuarios</li>
+                    <li>Productos defectuosos o que no cumplan con lo descrito</li>
+                    <li>Incumplimiento de acuerdos entre partes</li>
+                    <li>Pérdida o robo durante intercambios</li>
+                </ul>
+
+                <h3>10. Modificaciones a los Términos</h3>
+                <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigor inmediatamente después de su publicación en la plataforma.</p>
+
+                <h3>11. Ley Aplicable</h3>
+                <p>Estos términos se rigen por las leyes de la República de El Salvador y las normativas de la Universidad Francisco Gavidia.</p>
+
+                <h3>12. Contacto</h3>
+                <p>Para consultas sobre estos términos, contactar a: marketplace@ufg.edu.sv</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Política de Privacidad -->
+    <div id="modal-privacidad" class="modal modal-legal">
+        <div class="modal-content modal-legal-content">
+            <span class="close btn-close-legal">&times;</span>
+            <div class="legal-header">
+                <h2>🔒 Política de Privacidad</h2>
+                <p class="legal-last-updated">Última actualización: Enero 2026</p>
+            </div>
+            <div class="legal-body">
+                <h3>1. Información que Recopilamos</h3>
+                <p>Recopilamos la siguiente información personal:</p>
+                <ul>
+                    <li><strong>Información de registro:</strong> Nombre completo, correo electrónico institucional, contraseña</li>
+                    <li><strong>Información de perfil:</strong> Fotografía de perfil (opcional)</li>
+                    <li><strong>Información de productos:</strong> Detalles de productos publicados, fotografías, precios</li>
+                    <li><strong>Información de comunicación:</strong> Mensajes intercambiados con otros usuarios</li>
+                    <li><strong>Datos de uso:</strong> Actividad en la plataforma, preferencias de búsqueda</li>
+                </ul>
+
+                <h3>2. Uso de la Información</h3>
+                <p>Utilizamos tu información para:</p>
+                <ul>
+                    <li>Verificar tu identidad como miembro de la comunidad UFG</li>
+                    <li>Facilitar la comunicación entre compradores y vendedores</li>
+                    <li>Moderar publicaciones y mantener la seguridad de la plataforma</li>
+                    <li>Mejorar la experiencia de usuario y funcionalidades</li>
+                    <li>Enviar notificaciones relacionadas con transacciones</li>
+                    <li>Cumplir con obligaciones legales y normativas universitarias</li>
+                </ul>
+
+                <h3>3. Protección de Datos</h3>
+                <p>Implementamos medidas de seguridad para proteger tu información:</p>
+                <ul>
+                    <li>Encriptación de contraseñas y datos sensibles</li>
+                    <li>Acceso restringido a información personal</li>
+                    <li>Almacenamiento seguro en servidores protegidos</li>
+                    <li>Monitoreo de actividades sospechosas</li>
+                </ul>
+
+                <h3>4. Compartir Información</h3>
+                <p>Tu información puede ser compartida con:</p>
+                <ul>
+                    <li><strong>Otros usuarios:</strong> Nombre, foto de perfil e información de productos publicados son visibles para toda la comunidad</li>
+                    <li><strong>Administradores:</strong> Tienen acceso a información completa para fines de moderación</li>
+                    <li><strong>Autoridades universitarias:</strong> Solo cuando sea requerido por investigaciones o procedimientos disciplinarios</li>
+                </ul>
+                <p><strong>No vendemos ni comercializamos</strong> tu información personal con terceros.</p>
+
+                <h3>5. Cookies y Tecnologías de Seguimiento</h3>
+                <p>Utilizamos cookies para:</p>
+                <ul>
+                    <li>Mantener tu sesión activa</li>
+                    <li>Recordar preferencias de configuración</li>
+                    <li>Analizar el uso de la plataforma para mejoras</li>
+                </ul>
+
+                <h3>6. Tus Derechos</h3>
+                <p>Tienes derecho a:</p>
+                <ul>
+                    <li>Acceder a tu información personal almacenada</li>
+                    <li>Corregir información incorrecta o desactualizada</li>
+                    <li>Solicitar la eliminación de tu cuenta y datos asociados</li>
+                    <li>Optar por no recibir notificaciones no esenciales</li>
+                    <li>Exportar tus datos en formato legible</li>
+                </ul>
+
+                <h3>7. Retención de Datos</h3>
+                <p>Conservamos tu información mientras:</p>
+                <ul>
+                    <li>Tu cuenta permanezca activa</li>
+                    <li>Sea necesario para cumplir con obligaciones legales</li>
+                    <li>Sea relevante para investigaciones de seguridad o fraude</li>
+                </ul>
+                <p>Al eliminar tu cuenta, tus datos personales se eliminan en un plazo de 30 días, excepto información requerida por ley.</p>
+
+                <h3>8. Menores de Edad</h3>
+                <p>La plataforma está dirigida exclusivamente a mayores de 18 años. Si eres menor, necesitas supervisión de un adulto para utilizar Marketplace UFG.</p>
+
+                <h3>9. Cambios a esta Política</h3>
+                <p>Podemos actualizar esta política periódicamente. Te notificaremos cambios significativos mediante correo electrónico o notificaciones en la plataforma.</p>
+
+                <h3>10. Contacto</h3>
+                <p>Para preguntas sobre privacidad o ejercicio de derechos, contactar a: marketplace@ufg.edu.sv</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Política de Cookies -->
+    <div id="modal-cookies" class="modal modal-legal">
+        <div class="modal-content modal-legal-content">
+            <span class="close btn-close-legal">&times;</span>
+            <div class="legal-header">
+                <h2>🍪 Política de Cookies</h2>
+                <p class="legal-last-updated">Última actualización: Enero 2026</p>
+            </div>
+            <div class="legal-body">
+                <h3>1. ¿Qué son las Cookies?</h3>
+                <p>Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas un sitio web. Nos permiten recordar tu actividad y preferencias para mejorar tu experiencia.</p>
+
+                <h3>2. Tipos de Cookies que Utilizamos</h3>
+                
+                <h4>2.1 Cookies Esenciales</h4>
+                <p>Son necesarias para el funcionamiento básico de la plataforma:</p>
+                <ul>
+                    <li><strong>Cookie de sesión:</strong> Mantiene tu sesión activa mientras navegas</li>
+                    <li><strong>Cookie de autenticación:</strong> Verifica tu identidad para acceder a funciones protegidas</li>
+                    <li><strong>Cookie de seguridad:</strong> Previene ataques CSRF y protege tu cuenta</li>
+                </ul>
+                <p><em>Estas cookies no pueden ser desactivadas ya que la plataforma no funcionaría correctamente sin ellas.</em></p>
+
+                <h4>2.2 Cookies de Preferencias</h4>
+                <p>Guardan tu configuración y preferencias:</p>
+                <ul>
+                    <li>Idioma seleccionado</li>
+                    <li>Preferencias de visualización</li>
+                    <li>Filtros de búsqueda guardados</li>
+                </ul>
+
+                <h4>2.3 Cookies Analíticas</h4>
+                <p>Nos ayudan a entender cómo utilizas la plataforma:</p>
+                <ul>
+                    <li>Páginas más visitadas</li>
+                    <li>Tiempo de permanencia</li>
+                    <li>Funciones más utilizadas</li>
+                    <li>Errores encontrados</li>
+                </ul>
+                <p>Esta información es anónima y se utiliza para mejorar la plataforma.</p>
+
+                <h3>3. Cookies de Terceros</h3>
+                <p>Actualmente NO utilizamos cookies de terceros para publicidad o seguimiento. Todas las cookies son propias de Marketplace UFG.</p>
+
+                <h3>4. Duración de las Cookies</h3>
+                <ul>
+                    <li><strong>Cookies de sesión:</strong> Se eliminan al cerrar el navegador</li>
+                    <li><strong>Cookies persistentes:</strong> Permanecen desde 1 día hasta 1 año, según su función</li>
+                </ul>
+
+                <h3>5. Gestión de Cookies</h3>
+                <p>Puedes controlar las cookies desde tu navegador:</p>
+                <ul>
+                    <li><strong>Chrome:</strong> Configuración → Privacidad y seguridad → Cookies</li>
+                    <li><strong>Firefox:</strong> Opciones → Privacidad y seguridad → Cookies</li>
+                    <li><strong>Safari:</strong> Preferencias → Privacidad → Cookies</li>
+                    <li><strong>Edge:</strong> Configuración → Cookies y permisos del sitio</li>
+                </ul>
+                <p>Ten en cuenta que desactivar cookies esenciales puede impedir el funcionamiento correcto de la plataforma.</p>
+
+                <h3>6. Actualizaciones</h3>
+                <p>Esta política puede actualizarse periódicamente. Te recomendamos revisarla cada vez que accedas a la plataforma.</p>
+
+                <h3>7. Contacto</h3>
+                <p>Para preguntas sobre cookies, contactar a: marketplace@ufg.edu.sv</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Reordenamiento de Categorías -->
+    <div id="modal-reorder-categories" class="modal">
+        <div class="modal-content modal-reorder-content">
+            <span class="close btn-close-reorder">&times;</span>
+            <div class="reorder-header">
+                <h2>📋 Reordenar Categorías</h2>
+                <p>Arrastrá las categorías para cambiar su orden. La categoría que aparece primero se mostrará primero en la lista de productos.</p>
+            </div>
+            <div id="reorder-categories-list" class="reorder-list">
+                <!-- Categories will be populated dynamically -->
+            </div>
+            <div class="reorder-actions">
+                <button id="btn-save-reorder" class="btn-primary btn-block">
+                    💾 Guardar Orden
+                </button>
+                <button id="btn-cancel-reorder" class="btn-secondary btn-block">
+                    Cancelar
+                </button>
+            </div>
         </div>
     </div>
 </div>
