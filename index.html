@@ -584,28 +584,28 @@
                     <input type="email" id="perfil-email" disabled>
                 </div>
 
-                <!-- Cambio de Contraseña -->
-                <div class="perfil-password-section">
-                    <h3 class="perfil-section-title">Cambiar Contraseña</h3>
-                    <div class="form-group">
-                        <label for="perfil-password">Nueva Contraseña</label>
-                        <input type="password" id="perfil-password" placeholder="Mínimo 6 caracteres" minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label for="perfil-password-confirm">Confirmar Contraseña</label>
-                        <input type="password" id="perfil-password-confirm" placeholder="Repetí la nueva contraseña" minlength="6">
-                    </div>
-                    <button type="button" id="btn-change-password" class="btn-action btn-secondary-dark" style="width: 100%;">
-                        Actualizar Contraseña
-                    </button>
-                </div>
-
                 <div class="form-actions">
                     <button type="submit" class="btn-primary">
                         Guardar Cambios
                     </button>
                 </div>
             </form>
+
+            <!-- Cambio de Contraseña (fuera del form de perfil) -->
+            <div class="perfil-password-section">
+                <h3 class="perfil-section-title">Cambiar Contraseña</h3>
+                <div class="form-group">
+                    <label for="perfil-password">Nueva Contraseña</label>
+                    <input type="password" id="perfil-password" placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="perfil-password-confirm">Confirmar Contraseña</label>
+                    <input type="password" id="perfil-password-confirm" placeholder="Repetí la nueva contraseña" minlength="6">
+                </div>
+                <button type="button" id="btn-change-password" class="btn-action btn-secondary-dark" style="width: 100%;">
+                    Actualizar Contraseña
+                </button>
+            </div>
         </div>
     </div>
 
