@@ -40,6 +40,11 @@ class Application {
     async initialize() {
         console.log(`Iniciando ${CONFIG.APP.NAME} v${CONFIG.APP.VERSION}`);
 
+        // Check if this is a password recovery redirect BEFORE supabase processes it
+        if (window.location.hash && window.location.hash.includes('type=recovery')) {
+            sessionStorage.setItem('ufg_recovery_flow', 'true');
+        }
+
         this.initializeRepositories();
         this.initializeServices();
         this.initializeControllers();

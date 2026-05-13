@@ -382,25 +382,28 @@ export class AuthService {
     }
 
     /**
-     * Check if current URL has a password recovery token
-     * Supabase redirects with #access_token=... after email link click
+     * Check if current URL has a password recovery token.
+     * Supabase redirects with #access_token=...type=recovery after email link click.
+     * Must capture the hash early since supabase-js clears it after processing.
      */
     async handlePasswordRecovery() {
         try {
-            const hash = window.location.hash;
-            if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
-                // Supabase automatically processes the token on session recovery
-                const { data, error } = await supabase.auth.getSession();
-                
-                if (error || !data.session) {
-                    return false;
-                }
+            // Capture hash from sessionStorage (saved in app.js before supabase processes it)
+            const isRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
+            sessionStorage.removeItem('ufg_recovery_flow');
 
-                // If we got a session from the recovery link, show reset form
-                this.currentUser = data.session.user;
-                return true;
+            if (!isRecovery) {
+                return false;
             }
-            return false;
+
+            const { data, error } = await supabase.auth.getSession();
+
+            if (error || !data.session) {
+                return false;
+            }
+
+            this.currentUser = data.session.user;
+            return true;
         } catch (error) {
             console.error('[handlePasswordRecovery] Error:', error);
             return false;
