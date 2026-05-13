@@ -291,6 +291,7 @@ class Application {
         if (userAvatarEl) {
             const avatarUrl = profile?.avatar_url || '';
             userAvatarEl.src = avatarUrl || defaultAvatar;
+            userAvatarEl.style.display = 'block';
         }
 
         // Show/hide admin navigation based on role
