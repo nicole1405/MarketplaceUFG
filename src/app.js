@@ -77,7 +77,8 @@ class Application {
         this.services = {
             auth: authService,
             categories: new CategoryService(
-                this.repositories.categories
+                this.repositories.categories,
+                authService
             ),
             storage: new StorageService(),
             products: new ProductService(
@@ -123,6 +124,116 @@ class Application {
         eventBus.on(EVENTS.ADMIN.CATEGORY_DELETED, () => this.loadCategories());
         
         this.bindNavigationButtons();
+        this.bindLegalModals();
+        this.bindThemeToggle();
+    }
+
+    bindThemeToggle() {
+        const btnToggleTheme = document.getElementById('btn-toggle-theme');
+        const btnToggleThemeAuth = document.getElementById('btn-toggle-theme-auth');
+        
+        // Load saved theme preference
+        this.loadThemePreference();
+        
+        if (btnToggleTheme) {
+            btnToggleTheme.addEventListener('click', () => this.toggleTheme());
+        }
+        if (btnToggleThemeAuth) {
+            btnToggleThemeAuth.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    loadThemePreference() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.body.classList.add('dark-mode');
+            this.updateThemeButton(false);
+        } else {
+            this.updateThemeButton(true);
+        }
+    }
+
+    toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        this.updateThemeButton(!isDark);
+        
+        // Toast notification
+        const toastMessage = isDark ? '🌙 Modo oscuro activado' : '☀️ Modo claro activado';
+        if (window.toast) {
+            window.toast.success(toastMessage);
+        } else if (window.app?.services?.toast) {
+            window.app.services.toast.success(toastMessage);
+        }
+    }
+
+    updateThemeButton(isLight) {
+        const btnToggleTheme = document.getElementById('btn-toggle-theme');
+        const btnToggleThemeAuth = document.getElementById('btn-toggle-theme-auth');
+        
+        if (btnToggleTheme) {
+            btnToggleTheme.textContent = isLight ? '🌙' : '☀️';
+            btnToggleTheme.title = isLight ? 'Activar modo oscuro' : 'Activar modo claro';
+        }
+        if (btnToggleThemeAuth) {
+            btnToggleThemeAuth.textContent = isLight ? '🌙' : '☀️';
+            btnToggleThemeAuth.title = isLight ? 'Activar modo oscuro' : 'Activar modo claro';
+        }
+    }
+
+    bindLegalModals() {
+        // Modal links
+        const linkTerminos = document.getElementById('link-terminos');
+        const linkPrivacidad = document.getElementById('link-privacidad');
+        const linkCookies = document.getElementById('link-cookies');
+
+        // Modals
+        const modalTerminos = document.getElementById('modal-terminos');
+        const modalPrivacidad = document.getElementById('modal-privacidad');
+        const modalCookies = document.getElementById('modal-cookies');
+
+        // Close buttons
+        const closeButtons = document.querySelectorAll('.btn-close-legal');
+
+        // Open modals
+        if (linkTerminos) {
+            linkTerminos.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (modalTerminos) modalTerminos.style.display = 'block';
+            });
+        }
+
+        if (linkPrivacidad) {
+            linkPrivacidad.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (modalPrivacidad) modalPrivacidad.style.display = 'block';
+            });
+        }
+
+        if (linkCookies) {
+            linkCookies.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (modalCookies) modalCookies.style.display = 'block';
+            });
+        }
+
+        // Close modals
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modalTerminos.style.display = 'none';
+                modalPrivacidad.style.display = 'none';
+                modalCookies.style.display = 'none';
+            });
+        });
+
+        // Close on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === modalTerminos) modalTerminos.style.display = 'none';
+            if (e.target === modalPrivacidad) modalPrivacidad.style.display = 'none';
+            if (e.target === modalCookies) modalCookies.style.display = 'none';
+        });
     }
 
     bindNavigationButtons() {

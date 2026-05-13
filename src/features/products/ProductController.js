@@ -137,7 +137,7 @@ export class ProductController {
         this.elements.categoryFilters.innerHTML = `
             <button class="filter-btn active" data-category="">Todos</button>
             ${window.categories.map(cat => `
-                <button class="filter-btn" data-category="${cat.id}">${cat.icono} ${cat.nombre}</button>
+                <button class="filter-btn" data-category="${cat.id}">${cat.icono || ''}${cat.icono ? ' ' : ''}${cat.nombre}</button>
             `).join('')}
         `;
     }
@@ -148,7 +148,7 @@ export class ProductController {
         this.elements.categoriaProducto.innerHTML = `
             <option value="">Selecciona una categoría</option>
             ${window.categories.map(cat => `
-                <option value="${cat.id}">${cat.icono} ${cat.nombre}</option>
+                <option value="${cat.id}">${cat.icono || ''}${cat.icono ? ' ' : ''}${cat.nombre}</option>
             `).join('')}
         `;
     }
@@ -289,8 +289,36 @@ export class ProductController {
 
         const nombre = this.elements.nombreProducto?.value.trim();
         const categoriaId = this.elements.categoriaProducto?.value;
-        const precio = this.elements.precioProducto?.value;
+        const precioRaw = this.elements.precioProducto?.value;
         const descripcion = this.elements.descripcionProducto?.value.trim();
+
+        // Validate required fields
+        if (!nombre) {
+            toast.error('El nombre del producto es obligatorio');
+            return;
+        }
+
+        if (!precioRaw || precioRaw.trim() === '') {
+            toast.error('El precio del producto es obligatorio');
+            return;
+        }
+
+        // Parse and validate price
+        const precio = parseFloat(precioRaw);
+        if (isNaN(precio) || precio < 0) {
+            toast.error('El precio debe ser un número válido');
+            return;
+        }
+
+        if (precio > 99999999.99) {
+            toast.error('El precio no puede superar los $99,999,999.99');
+            return;
+        }
+
+        if (!categoriaId) {
+            toast.error('Debes seleccionar una categoría');
+            return;
+        }
 
         let imagenesUrls = [];
         let imagenesPaths = [];
@@ -341,33 +369,43 @@ export class ProductController {
     }
 
     async handleImageSelect(event) {
-        const files = Array.from(event.target.files);
-        if (files.length === 0) return;
+        const newFiles = Array.from(event.target.files);
+        if (newFiles.length === 0) return;
 
         const maxImages = 5;
-        if (files.length > maxImages) {
-            toast.error(`Máximo ${maxImages} imágenes permitidas`);
-            event.target.value = '';
-            return;
-        }
-
         const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         const maxSizeMB = 5;
 
-        for (const file of files) {
+        // Validate new files
+        for (const file of newFiles) {
             if (!validTypes.includes(file.type)) {
                 toast.error('Solo se permiten imágenes (JPG, PNG, GIF, WebP)');
+                event.target.value = '';
                 return;
             }
             if (file.size > maxSizeMB * 1024 * 1024) {
                 toast.error(`La imagen no puede exceder ${maxSizeMB}MB`);
+                event.target.value = '';
                 return;
             }
         }
 
-        this.currentImageFiles = files;
+        // Combine with existing files
+        const existingFiles = this.currentImageFiles || [];
+        const combinedFiles = [...existingFiles, ...newFiles];
+
+        if (combinedFiles.length > maxImages) {
+            toast.error(`Máximo ${maxImages} imágenes permitidas. Ya tenés ${existingFiles.length} seleccionada(s).`);
+            event.target.value = '';
+            return;
+        }
+
+        this.currentImageFiles = combinedFiles;
         
-        this.renderImagePreviews(files);
+        // Clear input so the same files can be selected again
+        event.target.value = '';
+        
+        this.renderImagePreviews(this.currentImageFiles);
     }
 
     renderImagePreviews(files) {
@@ -462,7 +500,8 @@ export class ProductController {
 
     createMyProductItem(product) {
         const item = document.createElement('div');
-        item.className = 'producto-item';
+        item.className = 'producto-item clickable';
+        item.dataset.productId = product.id;
 
         let imagenUrl = product.imagenes_urls && product.imagenes_urls.length > 0 ? product.imagenes_urls[0] : null;
         if (!imagenUrl && product.imagen) {
@@ -478,17 +517,21 @@ export class ProductController {
             ? `<span style="font-size: 0.85rem; color: var(--primary-color);">${categoriaNombre}</span>`
             : '';
 
-        const estadoLabel = product.estado === 'vendido' ? '<span class="badge-vendido">Vendido</span>' : '';
+        // Estado badge (disponible/inactivo)
+        const estadoLabel = product.estado === 'inactivo' 
+            ? '<span class="rol-badge" style="background:#9E9E9E; color:white; padding:2px 8px; border-radius:4px; font-size:0.75rem;">Inactivo</span>'
+            : product.estado === 'vendido'
+                ? '<span class="rol-badge" style="background:#757575; color:white; padding:2px 8px; border-radius:4px; font-size:0.75rem;">Vendido</span>'
+                : '';
 
-        // Show revision state badge for pending/rejected products
+        // Revision state badge
         let revisionBadge = '';
         if (product.estado_revision === 'pendiente') {
-            revisionBadge = '<span class="badge-pendiente" style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Pendiente</span>';
+            revisionBadge = '<span class="rol-badge rol-badge-pendiente" style="padding:2px 8px; border-radius:4px; font-size:0.75rem;">Pendiente</span>';
         } else if (product.estado_revision === 'rechazado') {
-            const motivo = product.motivo_rechazo ? ` - ${UIUtils.escapeHtml(product.motivo_rechazo)}` : '';
-            revisionBadge = `<span class="badge-rechazado" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Rechazado${motivo}</span>`;
+            revisionBadge = '<span class="rol-badge rol-badge-rechazado" style="padding:2px 8px; border-radius:4px; font-size:0.75rem;">Rechazado</span>';
         } else if (product.estado_revision === 'aprobado') {
-            revisionBadge = '<span class="badge-aprobado" style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Aprobado</span>';
+            revisionBadge = '<span class="rol-badge rol-badge-aprobado" style="padding:2px 8px; border-radius:4px; font-size:0.75rem;">Aprobado</span>';
         }
 
         item.innerHTML = `
@@ -501,14 +544,34 @@ export class ProductController {
                 ${revisionBadge}
             </div>
             <div class="producto-item-actions">
-                <button class="btn-small btn-delete" data-product-id="${product.id}">
+                <button class="btn-small btn-detail" data-action="view-detail" data-product-id="${product.id}">
+                    Ver Detalle
+                </button>
+                <button class="btn-small btn-delete" data-action="delete-product" data-product-id="${product.id}">
                     Eliminar
                 </button>
             </div>
         `;
 
-        const deleteBtn = item.querySelector('[data-product-id]');
-        deleteBtn.addEventListener('click', () => this.handleDelete(product.id));
+        // Click on the card itself opens detail
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.producto-item-actions')) return;
+            this.showSellerProductDetail(product);
+        });
+
+        // Detail button
+        const detailBtn = item.querySelector('[data-action="view-detail"]');
+        detailBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showSellerProductDetail(product);
+        });
+
+        // Delete button
+        const deleteBtn = item.querySelector('[data-action="delete-product"]');
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleDelete(product.id);
+        });
 
         return item;
     }
@@ -526,6 +589,198 @@ export class ProductController {
         } else {
             toast.error(result.error);
         }
+    }
+
+    /**
+     * Show product detail modal for seller (with revision status and visibility toggle)
+     * @param {Object} product
+     */
+    showSellerProductDetail(product) {
+        // Remove existing overlay if any
+        const existing = document.getElementById('seller-product-detail-overlay');
+        if (existing) existing.remove();
+
+        const imagenes = product.imagenes_urls && product.imagenes_urls.length > 0 
+            ? product.imagenes_urls 
+            : product.imagen_url 
+                ? [product.imagen_url] 
+                : [];
+
+        const categoriaNombre = product.categorias?.nombre || product.categoriaNombre || 'Sin categoria';
+        const motivoRechazo = product.motivo_rechazo 
+            ? `<div class="seller-rejection-reason"><strong>Motivo:</strong> ${UIUtils.escapeHtml(product.motivo_rechazo)}</div>`
+            : '';
+
+        // Revision status badge
+        let revisionStatusHtml = '';
+        if (product.estado_revision === 'pendiente') {
+            revisionStatusHtml = '<span class="rol-badge rol-badge-pendiente">Pendiente de revision</span>';
+        } else if (product.estado_revision === 'rechazado') {
+            revisionStatusHtml = `
+                <div class="seller-revision-block rejected">
+                    <span class="rol-badge rol-badge-rechazado">Rechazado</span>
+                    ${motivoRechazo}
+                </div>`;
+        } else if (product.estado_revision === 'aprobado') {
+            revisionStatusHtml = '<span class="rol-badge rol-badge-aprobado">Aprobado</span>';
+        }
+
+        // Visibility toggle (only for approved products)
+        const showToggle = product.estado_revision === 'aprobado';
+        const isCurrentlyVisible = product.estado === 'disponible';
+        const toggleBtnText = isCurrentlyVisible ? 'Ocultar de la vitrina' : 'Mostrar en la vitrina';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'seller-product-detail-overlay';
+        overlay.className = 'modal';
+        overlay.style.cssText = 'display: flex; align-items: center; justify-content: center; z-index: 99999;';
+        overlay.innerHTML = `
+            <div class="seller-detail-content">
+                <span class="close seller-detail-close">&times;</span>
+                <div class="seller-detail-header">
+                    <h2>${UIUtils.escapeHtml(product.nombre)}</h2>
+                </div>
+                <div class="seller-detail-body">
+                    ${imagenes.length > 0 ? `
+                    <div class="seller-detail-images">
+                        ${imagenes.map((url, idx) => `
+                        <div class="review-image-wrapper">
+                            <img src="${UIUtils.escapeHtml(url)}" alt="${UIUtils.escapeHtml(product.nombre)}" class="seller-detail-image clickable-zoom" data-index="${idx}" onerror="this.style.display='none'">
+                            <button class="btn-zoom-image" data-index="${idx}" title="Ver imagen mas grande">🔍</button>
+                        </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+
+                    <div class="seller-detail-info-grid">
+                        <div class="seller-detail-field">
+                            <span class="seller-detail-label">Precio</span>
+                            <span class="seller-detail-value">$${parseFloat(product.precio).toFixed(2)}</span>
+                        </div>
+                        <div class="seller-detail-field">
+                            <span class="seller-detail-label">Categoria</span>
+                            <span class="seller-detail-value">${UIUtils.escapeHtml(categoriaNombre)}</span>
+                        </div>
+                        <div class="seller-detail-field">
+                            <span class="seller-detail-label">Visibilidad</span>
+                            <span class="seller-detail-value">${isCurrentlyVisible ? 'Visible' : 'Oculto'}</span>
+                        </div>
+                        <div class="seller-detail-field">
+                            <span class="seller-detail-label">Estado</span>
+                            <span class="seller-detail-value">${revisionStatusHtml}</span>
+                        </div>
+                    </div>
+
+                    ${product.descripcion ? `
+                    <div class="seller-detail-description">
+                        <span class="seller-detail-label">Descripcion</span>
+                        <p>${UIUtils.escapeHtml(product.descripcion)}</p>
+                    </div>
+                    ` : ''}
+
+                    <div class="seller-detail-actions">
+                        ${showToggle ? `
+                        <button class="btn-action ${isCurrentlyVisible ? 'btn-reject' : 'btn-approve'} seller-toggle-btn">
+                            ${toggleBtnText}
+                        </button>
+                        ` : ''}
+                        <button class="btn-secondary seller-close-btn">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Close handlers
+        overlay.querySelector('.seller-detail-close').addEventListener('click', () => overlay.remove());
+        overlay.querySelector('.seller-close-btn').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+
+        // Image zoom handlers
+        overlay.querySelectorAll('.btn-zoom-image, .seller-detail-image.clickable-zoom').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.index);
+                if (!isNaN(idx) && imagenes[idx]) {
+                    this.openSellerImageZoom(imagenes[idx], product.nombre);
+                }
+            });
+        });
+
+        // Toggle visibility handler
+        const toggleBtn = overlay.querySelector('.seller-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', async () => {
+                toggleBtn.disabled = true;
+                toggleBtn.textContent = 'Procesando...';
+                try {
+                    const result = await this.productService.toggleProductStatus(product.id);
+                    if (result.success) {
+                        toast.success(result.message);
+                        overlay.remove();
+                        this.renderMyProducts();
+                    } else {
+                        toast.error(result.error);
+                        toggleBtn.disabled = false;
+                        toggleBtn.textContent = toggleBtnText;
+                    }
+                } catch (error) {
+                    toast.error(error.message);
+                    toggleBtn.disabled = false;
+                    toggleBtn.textContent = toggleBtnText;
+                }
+            });
+        }
+
+        // Escape key
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                const o = document.getElementById('seller-product-detail-overlay');
+                if (o) o.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    }
+
+    /**
+     * Open image zoom overlay for seller view
+     * @param {string} imageUrl
+     * @param {string} productName
+     */
+    openSellerImageZoom(imageUrl, productName) {
+        const existing = document.getElementById('image-zoom-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'image-zoom-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); z-index: 99999; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s ease;';
+        overlay.innerHTML = `
+            <div class="zoom-overlay-content">
+                <span class="close zoom-close">&times;</span>
+                <img src="${UIUtils.escapeHtml(imageUrl)}" alt="${UIUtils.escapeHtml(productName)}" class="zoom-image">
+                <p class="zoom-caption">${UIUtils.escapeHtml(productName)}</p>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector('.zoom-close').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                const o = document.getElementById('image-zoom-overlay');
+                if (o) o.remove();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
     }
 
     showProductDetail(product) {

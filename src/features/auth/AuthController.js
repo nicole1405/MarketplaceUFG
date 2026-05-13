@@ -26,12 +26,17 @@ export class AuthController {
             appContainer: document.getElementById('app-container'),
             loginForm: document.getElementById('login-form'),
             registerForm: document.getElementById('register-form'),
+            forgotForm: document.getElementById('forgot-form'),
+            resetForm: document.getElementById('reset-form'),
             loginEmail: document.getElementById('login-email'),
             loginPassword: document.getElementById('login-password'),
             registerNombre: document.getElementById('register-nombre'),
             registerEmail: document.getElementById('register-email'),
             registerPassword: document.getElementById('register-password'),
             registerPasswordConfirm: document.getElementById('register-password-confirm'),
+            forgotEmail: document.getElementById('forgot-email'),
+            resetPassword: document.getElementById('reset-password'),
+            resetPasswordConfirm: document.getElementById('reset-password-confirm'),
             
             userProfile: document.getElementById('user-profile'),
             userAvatar: document.getElementById('user-avatar'),
@@ -51,6 +56,8 @@ export class AuthController {
         // Forms
         const loginFormElement = this.elements.loginForm?.querySelector('form');
         const registerFormElement = this.elements.registerForm?.querySelector('form');
+        const forgotFormElement = this.elements.forgotForm?.querySelector('form');
+        const resetFormElement = this.elements.resetForm?.querySelector('form');
 
         if (loginFormElement) {
             loginFormElement.addEventListener('submit', (e) => this.handleLogin(e));
@@ -60,9 +67,19 @@ export class AuthController {
             registerFormElement.addEventListener('submit', (e) => this.handleRegister(e));
         }
 
-        // Links para cambiar entre login y registro
+        if (forgotFormElement) {
+            forgotFormElement.addEventListener('submit', (e) => this.handleForgotPassword(e));
+        }
+
+        if (resetFormElement) {
+            resetFormElement.addEventListener('submit', (e) => this.handleResetPassword(e));
+        }
+
+        // Links para cambiar entre formularios
         const switchToRegisterLink = document.getElementById('link-to-register');
         const switchToLoginLink = document.getElementById('link-to-login');
+        const switchToForgotLink = document.getElementById('link-forgot-password');
+        const backToLoginFromForgot = document.getElementById('link-back-to-login');
 
         if (switchToRegisterLink) {
             switchToRegisterLink.addEventListener('click', (e) => {
@@ -73,6 +90,20 @@ export class AuthController {
 
         if (switchToLoginLink) {
             switchToLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showLogin();
+            });
+        }
+
+        if (switchToForgotLink) {
+            switchToForgotLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showForgotPassword();
+            });
+        }
+
+        if (backToLoginFromForgot) {
+            backToLoginFromForgot.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showLogin();
             });
@@ -125,8 +156,59 @@ export class AuthController {
             toast.success(result.message);
             eventBus.emit(EVENTS.AUTH.LOGIN, result.user);
             this.showApp();
+        } else if (result.needsConfirmation) {
+            // Show confirmation error with resend option
+            this.showEmailConfirmationError(email);
         } else {
             toast.error(result.error);
+        }
+    }
+
+    showEmailConfirmationError(email) {
+        const loginForm = this.elements.loginForm?.querySelector('form');
+        if (!loginForm) return;
+
+        // Remove existing confirmation message
+        const existingMsg = document.getElementById('email-confirm-error');
+        if (existingMsg) existingMsg.remove();
+
+        const msgDiv = document.createElement('div');
+        msgDiv.id = 'email-confirm-error';
+        msgDiv.className = 'auth-confirm-message';
+        msgDiv.innerHTML = `
+            <div class="confirm-error-content">
+                <p>${MESSAGES.AUTH.LOGIN_EMAIL_NOT_CONFIRMED}</p>
+                <button type="button" id="btn-resend-confirmation" class="btn-link">Reenviar correo de confirmacion</button>
+                <span id="resend-status" style="display:none; color: var(--success); font-size: 0.85rem;"></span>
+            </div>
+        `;
+
+        // Insert before the submit button
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.parentNode.insertBefore(msgDiv, submitBtn);
+        } else {
+            loginForm.appendChild(msgDiv);
+        }
+
+        const resendBtn = document.getElementById('btn-resend-confirmation');
+        if (resendBtn) {
+            resendBtn.addEventListener('click', async () => {
+                resendBtn.disabled = true;
+                resendBtn.textContent = 'Enviando...';
+                const result = await this.authService.resendConfirmation(email);
+                const status = document.getElementById('resend-status');
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = result.success 
+                        ? MESSAGES.AUTH.RESEND_CONFIRMATION_SUCCESS 
+                        : result.error;
+                }
+                setTimeout(() => {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Reenviar correo de confirmacion';
+                }, 30000); // Disable for 30s to avoid spam
+            });
         }
     }
 
@@ -151,15 +233,90 @@ export class AuthController {
         });
 
         if (result.success) {
-            toast.success(result.message);
-            this.showLogin();
-            this.clearRegisterForm();
+            if (result.needsConfirmation) {
+                // Show confirmation message on the register form
+                this.showRegistrationConfirmation(email);
+            } else {
+                toast.success(result.message);
+                this.showLogin();
+                this.clearRegisterForm();
+            }
         } else {
             toast.error(result.error);
         }
     }
 
+    showRegistrationConfirmation(email) {
+        const registerForm = this.elements.registerForm;
+        if (!registerForm) return;
+
+        // Hide the form, show confirmation message
+        const formElement = registerForm.querySelector('form');
+        const switchLink = registerForm.querySelector('.auth-switch');
+        
+        if (formElement) formElement.style.display = 'none';
+        if (switchLink) switchLink.style.display = 'none';
+
+        // Remove existing confirmation if any
+        const existing = document.getElementById('registration-confirmed');
+        if (existing) existing.remove();
+
+        const confirmDiv = document.createElement('div');
+        confirmDiv.id = 'registration-confirmed';
+        confirmDiv.className = 'auth-confirm-message';
+        confirmDiv.innerHTML = `
+            <div class="confirm-success-content">
+                <span class="confirm-icon">📧</span>
+                <h3>Revisa tu correo</h3>
+                <p>Te enviamos un link de confirmacion a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                <p>Hace clic en el link para activar tu cuenta y despues inicia sesion.</p>
+                <div class="confirm-actions">
+                    <button type="button" id="btn-resend-register" class="btn-link">Reenviar correo</button>
+                    <span id="resend-register-status" style="display:none; color: var(--success); font-size: 0.85rem;"></span>
+                </div>
+                <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesion</button>
+            </div>
+        `;
+
+        registerForm.appendChild(confirmDiv);
+
+        document.getElementById('btn-back-to-login')?.addEventListener('click', () => {
+            this.showLogin();
+        });
+
+        document.getElementById('btn-resend-register')?.addEventListener('click', async () => {
+            const btn = document.getElementById('btn-resend-register');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+            }
+            const result = await this.authService.resendConfirmation(email);
+            const status = document.getElementById('resend-register-status');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = result.success 
+                    ? MESSAGES.AUTH.RESEND_CONFIRMATION_SUCCESS 
+                    : result.error;
+            }
+            setTimeout(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Reenviar correo';
+                }
+            }, 30000);
+        });
+    }
+
     async checkSession() {
+        // Check if user came from a password recovery link
+        const isRecovery = await this.authService.handlePasswordRecovery();
+        if (isRecovery) {
+            // Show the reset password form (stay on auth screen, don't go to app)
+            this.showLoginScreen(); // Show auth screen with just the reset form
+            this.showResetPassword();
+            return false; // Don't trigger onAuthenticated
+        }
+
         const hasSession = await this.authService.initialize();
         if (hasSession) {
             this.showApp();
@@ -167,6 +324,126 @@ export class AuthController {
             return true;
         }
         return false;
+    }
+
+    async handleForgotPassword(event) {
+        event.preventDefault();
+        
+        const email = this.elements.forgotEmail?.value.trim().toLowerCase();
+        if (!email) {
+            toast.error('Ingresá tu correo electrónico');
+            return;
+        }
+
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+        }
+
+        const result = await this.authService.resetPasswordForEmail(email);
+        
+        // Re-enable button
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enviar Link de Recuperación';
+        }
+        
+        if (result.success) {
+            this.showForgotConfirmation(email);
+        } else if (result.rateLimited) {
+            // Show rate limit error inline
+            this.showRateLimitError(result.error);
+        } else {
+            toast.error(result.error);
+        }
+    }
+
+    showRateLimitError(message) {
+        const forgotForm = this.elements.forgotForm;
+        if (!forgotForm) return;
+
+        // Remove existing rate limit message
+        const existing = document.getElementById('rate-limit-error');
+        if (existing) existing.remove();
+
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'rate-limit-error';
+        errorDiv.className = 'auth-confirm-message';
+        errorDiv.style.cssText = 'margin-top: 1rem;';
+        errorDiv.innerHTML = `
+            <div class="confirm-error-content">
+                <p>⏱️ ${UIUtils.escapeHtml(message)}</p>
+                <p style="font-size:0.8rem; color:#666; margin-top:0.5rem;">Esperá unos minutos y volvé a intentarlo.</p>
+            </div>
+        `;
+
+        const form = forgotForm.querySelector('form');
+        if (form) {
+            form.appendChild(errorDiv);
+        }
+    }
+
+    showForgotConfirmation(email) {
+        const forgotForm = this.elements.forgotForm;
+        if (!forgotForm) return;
+
+        const formEl = forgotForm.querySelector('form');
+        const switchLink = forgotForm.querySelector('.auth-switch');
+        
+        if (formEl) formEl.style.display = 'none';
+        if (switchLink) switchLink.style.display = 'none';
+
+        const existing = document.getElementById('forgot-confirmed');
+        if (existing) existing.remove();
+
+        const confirmDiv = document.createElement('div');
+        confirmDiv.id = 'forgot-confirmed';
+        confirmDiv.className = 'auth-confirm-message';
+        confirmDiv.innerHTML = `
+            <div class="confirm-success-content">
+                <span class="confirm-icon">📧</span>
+                <h3>Revisá tu correo</h3>
+                <p>Te enviamos un link de recuperación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                <p>Hacé clic en el link para restablecer tu contraseña.</p>
+                <p class="confirm-note">El link expira en 1 hora.</p>
+                <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+            </div>
+        `;
+
+        forgotForm.appendChild(confirmDiv);
+
+        document.getElementById('btn-back-to-login-from-forgot')?.addEventListener('click', () => {
+            this.showLogin();
+        });
+    }
+
+    async handleResetPassword(event) {
+        event.preventDefault();
+        
+        const password = this.elements.resetPassword?.value;
+        const passwordConfirm = this.elements.resetPasswordConfirm?.value;
+
+        if (!password || password.length < 6) {
+            toast.error('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        if (password !== passwordConfirm) {
+            toast.error(MESSAGES.AUTH.PASSWORD_MISMATCH);
+            return;
+        }
+
+        const result = await this.authService.updatePassword(password);
+        
+        if (result.success) {
+            toast.success(result.message);
+            this.authService.logout();
+            this.showLoginScreen();
+            this.clearResetForm();
+        } else {
+            toast.error(result.error);
+        }
     }
 
     logout() {
@@ -185,6 +462,12 @@ export class AuthController {
         if (this.elements.registerForm) {
             this.elements.registerForm.style.display = 'none';
         }
+        if (this.elements.forgotForm) {
+            this.elements.forgotForm.style.display = 'none';
+        }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'none';
+        }
     }
 
     showRegister() {
@@ -193,6 +476,50 @@ export class AuthController {
         }
         if (this.elements.registerForm) {
             this.elements.registerForm.style.display = 'block';
+        }
+        if (this.elements.forgotForm) {
+            this.elements.forgotForm.style.display = 'none';
+        }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'none';
+        }
+    }
+
+    showForgotPassword() {
+        if (this.elements.loginForm) {
+            this.elements.loginForm.style.display = 'none';
+        }
+        if (this.elements.registerForm) {
+            this.elements.registerForm.style.display = 'none';
+        }
+        if (this.elements.forgotForm) {
+            // Reset the form view (remove confirmation message if any)
+            const formEl = this.elements.forgotForm.querySelector('form');
+            const switchLink = this.elements.forgotForm.querySelector('.auth-switch');
+            if (formEl) formEl.style.display = '';
+            if (switchLink) switchLink.style.display = '';
+            const existing = document.getElementById('forgot-confirmed');
+            if (existing) existing.remove();
+            
+            this.elements.forgotForm.style.display = 'block';
+        }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'none';
+        }
+    }
+
+    showResetPassword() {
+        if (this.elements.loginForm) {
+            this.elements.loginForm.style.display = 'none';
+        }
+        if (this.elements.registerForm) {
+            this.elements.registerForm.style.display = 'none';
+        }
+        if (this.elements.forgotForm) {
+            this.elements.forgotForm.style.display = 'none';
+        }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'block';
         }
     }
 
@@ -217,6 +544,20 @@ export class AuthController {
 
     clearRegisterForm() {
         const form = this.elements.registerForm?.querySelector('form');
+        if (form) {
+            form.reset();
+        }
+        // Remove confirmation message if present
+        const existing = document.getElementById('registration-confirmed');
+        if (existing) existing.remove();
+        const formEl = this.elements.registerForm?.querySelector('form');
+        const switchLink = this.elements.registerForm?.querySelector('.auth-switch');
+        if (formEl) formEl.style.display = '';
+        if (switchLink) switchLink.style.display = '';
+    }
+
+    clearResetForm() {
+        const form = this.elements.resetForm?.querySelector('form');
         if (form) {
             form.reset();
         }

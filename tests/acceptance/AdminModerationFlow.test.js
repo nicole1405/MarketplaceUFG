@@ -72,21 +72,37 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
 
         global.confirm = vi.fn().mockReturnValue(true);
 
-        // Set up full admin panel DOM
+        // Set up full admin panel DOM with tabs
         document.body.innerHTML = `
             <div id="vista-admin">
-                <div id="admin-pending-products-list"></div>
-                <button id="btn-load-pending">Actualizar</button>
-                <div id="admin-users-list"></div>
-                <button id="btn-load-users">Actualizar</button>
-                <div id="admin-categories-list"></div>
-                <button id="btn-load-categories">Actualizar</button>
-                <form id="admin-form-category">
-                    <input id="admin-category-nombre" value="">
-                    <input id="admin-category-descripcion" value="">
-                    <input id="admin-category-icono" value="">
-                    <button type="submit" id="btn-create-category">Crear</button>
-                </form>
+                <div class="admin-panel">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-tab="productos-pendientes">Productos Pendientes</button>
+                        <button class="admin-tab-btn" data-tab="gestion-categorias">Categorias</button>
+                        <button class="admin-tab-btn" data-tab="gestion-usuarios">Usuarios</button>
+                    </div>
+                    <div class="admin-tabs-content">
+                        <div class="admin-tab-panel active" id="tab-productos-pendientes">
+                            <div id="admin-pending-products-list"></div>
+                            <button id="btn-load-pending">Actualizar</button>
+                        </div>
+                        <div class="admin-tab-panel" id="tab-gestion-categorias">
+                            <div id="admin-categories-list"></div>
+                            <button id="btn-load-categories">Actualizar</button>
+                            <form id="admin-form-category">
+                                <input id="admin-category-nombre" value="">
+                                <input id="admin-category-descripcion" value="">
+                                <input id="admin-category-icono" value="">
+                                <button type="submit" id="btn-create-category">Crear</button>
+                            </form>
+                        </div>
+                        <div class="admin-tab-panel" id="tab-gestion-usuarios">
+                            <input id="admin-user-search" type="text" value="">
+                            <div id="admin-users-list"></div>
+                            <button id="btn-load-users">Actualizar</button>
+                        </div>
+                    </div>
+                </div>
                 <div id="admin-reject-modal" style="display: none;">
                     <textarea id="admin-reject-reason"></textarea>
                     <button id="btn-confirm-reject">Confirmar</button>
@@ -294,8 +310,8 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             expect(list.innerHTML).toContain('Admin Principal');
             expect(list.innerHTML).toContain('Vendedor Uno');
             expect(list.innerHTML).toContain('Vendedor Dos');
-            expect(list.innerHTML).toContain('badge-admin');
-            expect(list.innerHTML).toContain('badge-anunciante');
+            expect(list.innerHTML).toContain('rol-badge-admin');
+            expect(list.innerHTML).toContain('rol-badge-anunciante');
         });
 
         it('debe promover anunciante a admin', async () => {
@@ -326,6 +342,127 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
 
             expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'anunciante');
         });
+
+        it('debe filtrar usuarios por correo electronico', async () => {
+            const users = [
+                { user_id: 'user-1', nombre: 'Juan', email: 'juan@ufg.edu.sv', rol: 'admin' },
+                { user_id: 'user-2', nombre: 'Maria', email: 'maria@ufg.edu.sv', rol: 'anunciante' },
+                { user_id: 'user-3', nombre: 'Pedro', email: 'pedro@ufg.edu.sv', rol: 'anunciante' }
+            ];
+
+            mockAdminService.getAllUsers.mockResolvedValue(users);
+
+            const controller = new AdminController(mockAdminService, mockEventBus);
+            await controller.loadUsers();
+
+            // Simular búsqueda por "maria"
+            const searchInput = document.getElementById('admin-user-search');
+            searchInput.value = 'maria';
+            searchInput.dispatchEvent(new Event('input'));
+
+            const list = document.getElementById('admin-users-list');
+            expect(list.innerHTML).toContain('Maria');
+            expect(list.innerHTML).not.toContain('Juan');
+            expect(list.innerHTML).not.toContain('Pedro');
+        });
+
+        it('debe mostrar mensaje cuando no hay resultados en la búsqueda', async () => {
+            const users = [
+                { user_id: 'user-1', nombre: 'Juan', email: 'juan@ufg.edu.sv', rol: 'admin' }
+            ];
+
+            mockAdminService.getAllUsers.mockResolvedValue(users);
+
+            const controller = new AdminController(mockAdminService, mockEventBus);
+            await controller.loadUsers();
+
+            // Simular búsqueda sin resultados
+            const searchInput = document.getElementById('admin-user-search');
+            searchInput.value = 'noexiste';
+            searchInput.dispatchEvent(new Event('input'));
+
+            const list = document.getElementById('admin-users-list');
+            expect(list.innerHTML).toContain('No se encontraron usuarios');
+        });
+
+        it('debe mostrar todos los usuarios al limpiar el buscador', async () => {
+            const users = [
+                { user_id: 'user-1', nombre: 'Juan', email: 'juan@ufg.edu.sv', rol: 'admin' },
+                { user_id: 'user-2', nombre: 'Maria', email: 'maria@ufg.edu.sv', rol: 'anunciante' }
+            ];
+
+            mockAdminService.getAllUsers.mockResolvedValue(users);
+
+            const controller = new AdminController(mockAdminService, mockEventBus);
+            await controller.loadUsers();
+
+            // Filtrar primero
+            const searchInput = document.getElementById('admin-user-search');
+            searchInput.value = 'juan';
+            searchInput.dispatchEvent(new Event('input'));
+
+            let list = document.getElementById('admin-users-list');
+            expect(list.innerHTML).toContain('Juan');
+            expect(list.innerHTML).not.toContain('Maria');
+
+            // Limpiar búsqueda
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+
+            list = document.getElementById('admin-users-list');
+            expect(list.innerHTML).toContain('Juan');
+            expect(list.innerHTML).toContain('Maria');
+        });
+    });
+
+    describe('Navegación por Pestañas', () => {
+        it('debe cambiar entre pestañas correctamente', () => {
+            const controller = new AdminController(mockAdminService, mockEventBus);
+
+            // Verificar que la pestaña inicial está activa
+            let activeTab = document.querySelector('.admin-tab-btn.active');
+            expect(activeTab.dataset.tab).toBe('productos-pendientes');
+
+            let activePanel = document.querySelector('.admin-tab-panel.active');
+            expect(activePanel.id).toBe('tab-productos-pendientes');
+
+            // Cambiar a pestaña de categorías
+            const categoriasTab = document.querySelector('.admin-tab-btn[data-tab="gestion-categorias"]');
+            categoriasTab.click();
+
+            activeTab = document.querySelector('.admin-tab-btn.active');
+            expect(activeTab.dataset.tab).toBe('gestion-categorias');
+
+            activePanel = document.querySelector('.admin-tab-panel.active');
+            expect(activePanel.id).toBe('tab-gestion-categorias');
+        });
+
+        it('debe cargar contenido automáticamente al cambiar de pestaña', async () => {
+            const mockCategories = [
+                { id: 'cat-1', nombre: 'Electrónica', descripcion: 'Dispositivos', icono: '📱' }
+            ];
+            mockCategoryService.getAll.mockResolvedValue(mockCategories);
+
+            global.window = {
+                app: {
+                    services: {
+                        categories: mockCategoryService
+                    }
+                }
+            };
+
+            const controller = new AdminController(mockAdminService, mockEventBus);
+
+            // Cambiar a pestaña de categorías (debería cargar automáticamente)
+            const categoriasTab = document.querySelector('.admin-tab-btn[data-tab="gestion-categorias"]');
+            categoriasTab.click();
+
+            // Esperar un poco para que se cargue el contenido
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Verificar que se llamó a getAll
+            expect(mockCategoryService.getAll).toHaveBeenCalled();
+        });
     });
 
     describe('Flujo de Gestión de Categorias', () => {
@@ -348,7 +485,8 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             expect(mockAdminService.createCategory).toHaveBeenCalledWith({
                 nombre: 'Electrónica',
                 descripcion: 'Dispositivos',
-                icono: '📱'
+                icono: '📱',
+                orden: 1
             });
             expect(mockToast.success).toHaveBeenCalledWith('Categoria creada exitosamente');
         });

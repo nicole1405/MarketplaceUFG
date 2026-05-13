@@ -131,6 +131,53 @@ export class ProductService {
         }
     }
 
+    async toggleProductStatus(productId) {
+        const user = this.authService.requireAuth();
+
+        const product = await this.productRepository.getById(productId);
+        if (!product) {
+            return {
+                success: false,
+                error: 'Producto no encontrado'
+            };
+        }
+
+        if (product.vendedor_id !== user.id) {
+            return {
+                success: false,
+                error: 'No tienes permiso para modificar este producto'
+            };
+        }
+
+        // Only allow toggling for approved products
+        if (product.estado_revision !== 'aprobado') {
+            return {
+                success: false,
+                error: 'Solo podés cambiar la visibilidad de productos aprobados'
+            };
+        }
+
+        const newEstado = product.estado === 'disponible' ? 'inactivo' : 'disponible';
+
+        try {
+            // Solo actualizar estado sin .select() para evitar RLS
+            await this.productRepository.updateEstado(productId, newEstado);
+
+            return {
+                success: true,
+                product: { ...product, estado: newEstado },
+                message: newEstado === 'inactivo' 
+                    ? 'Producto ocultado del público'
+                    : 'Producto ahora visible para todos'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
     async delete(productId) {
         const user = this.authService.requireAuth();
         

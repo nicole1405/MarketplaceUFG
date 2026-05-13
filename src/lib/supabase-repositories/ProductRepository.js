@@ -202,6 +202,21 @@ export class ProductRepository {
         return true;
     }
 
+    /**
+     * Update only the estado field using a SECURITY DEFINER function
+     * to bypass RLS SELECT policy issues when reading back the result
+     */
+    async updateEstado(id, newEstado) {
+        const { data, error } = await supabase
+            .rpc('toggle_product_visibility', {
+                p_product_id: id,
+                p_new_estado: newEstado
+            });
+
+        if (error) throw new Error(error.message);
+        return { success: true };
+    }
+
     async markAsSold(id) {
         const { data, error } = await supabase
             .from(this.table)
