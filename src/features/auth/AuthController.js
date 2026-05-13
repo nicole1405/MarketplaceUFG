@@ -27,7 +27,6 @@ export class AuthController {
             loginForm: document.getElementById('login-form'),
             registerForm: document.getElementById('register-form'),
             forgotForm: document.getElementById('forgot-form'),
-            resetForm: document.getElementById('reset-form'),
             loginEmail: document.getElementById('login-email'),
             loginPassword: document.getElementById('login-password'),
             registerNombre: document.getElementById('register-nombre'),
@@ -35,9 +34,7 @@ export class AuthController {
             registerPassword: document.getElementById('register-password'),
             registerPasswordConfirm: document.getElementById('register-password-confirm'),
             forgotEmail: document.getElementById('forgot-email'),
-            resetPassword: document.getElementById('reset-password'),
-            resetPasswordConfirm: document.getElementById('reset-password-confirm'),
-            
+
             userProfile: document.getElementById('user-profile'),
             userAvatar: document.getElementById('user-avatar'),
             userName: document.getElementById('user-name'),
