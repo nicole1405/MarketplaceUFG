@@ -14,7 +14,7 @@ export class CategoryRepository {
         const { data, error } = await supabase
             .from(this.table)
             .select('*')
-            .order('nombre', { ascending: true });
+            .order('orden', { ascending: true });
 
         if (error) throw new Error(error.message);
         return data || [];
@@ -48,7 +48,8 @@ export class CategoryRepository {
             .insert({
                 nombre: category.nombre,
                 descripcion: category.descripcion || null,
-                icono: category.icono || null
+                icono: category.icono || null,
+                orden: category.orden || 0
             })
             .select()
             .single();
@@ -58,19 +59,34 @@ export class CategoryRepository {
     }
 
     async update(id, category) {
+        const updateData = {
+            nombre: category.nombre,
+            descripcion: category.descripcion,
+            icono: category.icono
+        };
+        
+        // Only include orden if it's provided and is a number
+        if (category.orden !== undefined && category.orden !== null && typeof category.orden === 'number') {
+            updateData.orden = category.orden;
+            console.log('[CategoryRepository.update] Including orden:', category.orden, 'for category:', category.nombre);
+        } else {
+            console.warn('[CategoryRepository.update] NOT including orden. Received:', category.orden, 'typeof:', typeof category.orden);
+        }
+        
+        console.log('[CategoryRepository.update] Final updateData:', updateData, 'for id:', id);
+        
         const { data, error } = await supabase
             .from(this.table)
-            .update({
-                nombre: category.nombre,
-                descripcion: category.descripcion,
-                icono: category.icono,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', id)
-            .select()
-            .single();
+            .select();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+            console.error('[CategoryRepository.update] Supabase error:', error);
+            throw new Error(error.message);
+        }
+        
+        console.log('[CategoryRepository.update] Success! Returned:', data);
         return data;
     }
 

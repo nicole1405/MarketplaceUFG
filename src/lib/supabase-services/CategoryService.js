@@ -57,11 +57,20 @@ export class CategoryService {
         this.authService.requireAdmin();
 
         try {
-            const category = await this.categoryRepository.update(id, {
+            const updateData = {
                 nombre: data.nombre?.trim(),
                 descripcion: data.descripcion,
                 icono: data.icono
-            });
+            };
+            
+            // Include orden if provided
+            if (data.orden !== undefined && data.orden !== null) {
+                updateData.orden = Number(data.orden);
+            }
+            
+            console.log('[CategoryService.update] Calling repository with:', updateData);
+            
+            const category = await this.categoryRepository.update(id, updateData);
 
             return {
                 success: true,
