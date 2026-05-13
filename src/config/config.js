@@ -7,7 +7,17 @@ export const CONFIG = {
     APP: {
         NAME: 'Marketplace UFG',
         VERSION: '2.0.0',
-        DESCRIPTION: 'Conectando emprendedores universitarios'
+        DESCRIPTION: 'Conectando emprendedores universitarios',
+        /**
+         * URL pública de la aplicación.
+         * Supabase la usa para redirigir después de confirmar email o resetear contraseña.
+         * 
+         * En desarrollo local: 'http://127.0.0.1:5500'
+         * En producción: 'https://marketplaceufg.com'
+         * 
+         * Si se deja vacío, usa automáticamente window.location.origin
+         */
+        PUBLIC_URL: ''
     },
     
     SUPABASE: {
