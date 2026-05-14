@@ -377,7 +377,12 @@ export class AuthController {
         }
         
         if (result.success) {
-            this.showForgotConfirmation(email);
+            if (result.localLink) {
+                // Show local dev link
+                this.showForgotConfirmation(email, result.localLink);
+            } else {
+                this.showForgotConfirmation(email);
+            }
         } else {
             toast.error(result.error);
         }
@@ -408,7 +413,7 @@ export class AuthController {
         }
     }
 
-    showForgotConfirmation(email) {
+    showForgotConfirmation(email, localLink) {
         const forgotForm = this.elements.forgotForm;
         if (!forgotForm) return;
 
@@ -424,16 +429,30 @@ export class AuthController {
         const confirmDiv = document.createElement('div');
         confirmDiv.id = 'forgot-confirmed';
         confirmDiv.className = 'auth-confirm-message';
-        confirmDiv.innerHTML = `
-            <div class="confirm-success-content">
-                <span class="confirm-icon">📧</span>
-                <h3>Revisá tu correo</h3>
-                <p>Te enviamos un link de recuperación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
-                <p>Hacé clic en el link para restablecer tu contraseña.</p>
-                <p class="confirm-note">El link expira en 1 hora.</p>
-                <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
-            </div>
-        `;
+
+        if (localLink) {
+            // Development mode - show clickable link
+            confirmDiv.innerHTML = `
+                <div class="confirm-success-content">
+                    <span class="confirm-icon">🔧</span>
+                    <h3>Modo Desarrollo</h3>
+                    <p>Hacé clic en el link para restablecer tu contraseña:</p>
+                    <p><a href="${localLink}" class="btn-primary" style="display:inline-block;padding:12px 24px;margin-top:10px;text-decoration:none;border-radius:8px;">Restablecer Contraseña</a></p>
+                    <p style="font-size:0.8rem;margin-top:0.75rem;word-break:break-all;color:var(--text-light);">${localLink}</p>
+                    <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+                </div>
+            `;
+        } else {
+            confirmDiv.innerHTML = `
+                <div class="confirm-success-content">
+                    <span class="confirm-icon">📧</span>
+                    <h3>Revisá tu correo</h3>
+                    <p>Te enviamos un link de recuperación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                    <p>Hacé clic en el link para restablecer tu contraseña.</p>
+                    <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+                </div>
+            `;
+        }
 
         forgotForm.appendChild(confirmDiv);
 

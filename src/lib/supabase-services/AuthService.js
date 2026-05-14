@@ -450,7 +450,23 @@ export class AuthService {
             // Create new token
             await this.resetTokenRepo.create(email, token, expiresAt);
 
-            // Send email via Netlify Function (Resend)
+            const isLocal = typeof window !== 'undefined' && 
+                (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+            if (isLocal) {
+                // In local dev: show the reset link directly
+                const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
+                const resetUrl = `${publicUrl}/#reset-password/${token}`;
+                console.log('[Password Reset] Link:', resetUrl);
+                // Show in UI as well
+                return {
+                    success: true,
+                    localLink: resetUrl,
+                    message: `Modo desarrollo: usá este link para resetear:\n${resetUrl}`
+                };
+            }
+
+            // In production: send email via Netlify Function (Resend)
             const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
             const response = await fetch(`${publicUrl}/.netlify/functions/send-reset-email`, {
                 method: 'POST',
