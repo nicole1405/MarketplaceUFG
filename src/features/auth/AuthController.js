@@ -254,36 +254,47 @@ export class AuthController {
             this.showLogin();
             this.clearRegisterForm();
         } else {
-                    toast.error(result.error);
-                }
-                // Clean the hash and show login
-                window.location.hash = '';
-                this.showLoginScreen();
-                return false;
-            }
+            toast.error(result.error);
         }
-
-        // Custom password reset link
-        if (hash && hash.startsWith('#reset-password/')) {
-            const token = hash.split('#reset-password/')[1];
-            if (token) {
-                this._pendingResetToken = token;
-                this.showLoginScreen();
-                this.showResetPassword();
-                return false;
-            }
-        }
-
-        const hasSession = await this.authService.initialize();
-        if (hasSession) {
-            this.showApp();
-            eventBus.emit(EVENTS.AUTH.SESSION_RESTORED, this.authService.getCurrentUser());
-            return true;
-        }
-        return false;
     }
 
     async handleForgotPassword(event) {
+        event.preventDefault();
+        
+        const email = this.elements.forgotEmail?.value.trim().toLowerCase();
+        if (!email) {
+            toast.error('Ingresá tu correo electrónico');
+            return;
+        }
+
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+        }
+
+        const result = await this.authService.requestPasswordReset(email);
+        
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enviar Link de Recuperación';
+        }
+        
+        if (result.success) {
+            if (result.localLink) {
+                this.showForgotConfirmation(email, result.localLink);
+            } else {
+                this.showForgotConfirmation(email);
+            }
+        } else {
+            toast.error(result.error);
+        }
+    }
+
+    async checkSession() {
+        const hash = window.location.hash;
+
+        // Custom email confirmation link
         event.preventDefault();
         
         const email = this.elements.forgotEmail?.value.trim().toLowerCase();
