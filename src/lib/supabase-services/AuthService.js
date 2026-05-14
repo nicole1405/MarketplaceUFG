@@ -65,20 +65,9 @@ export class AuthService {
                 };
             }
 
-            // Set email_verified = false in profiles (our custom confirmation)
-            try {
-                await this.profileRepository.updateByUserId(data.user.id, {
-                    email_verified: false
-                });
-            } catch (e) {
-                // Profile might not exist yet (trigger hasn't run), that's ok
-                console.warn('[register] Could not set email_verified:', e.message);
-            }
-
             return {
                 success: true,
-                needsConfirmation: true,
-                message: MESSAGES.AUTH.REGISTER_NEEDS_CONFIRMATION,
+                message: MESSAGES.AUTH.REGISTER_SUCCESS,
                 user: data.user
             };
         } catch (error) {
@@ -115,21 +104,6 @@ export class AuthService {
 
             this.currentUser = data.user;
             this.currentProfile = await this.profileRepository.getByUserId(data.user.id);
-
-            // Check if email is verified (our custom system)
-            if (this.currentProfile && this.currentProfile.email_verified === false) {
-                // Logout and tell user to confirm email
-                await this.sessionRepository.signOut();
-                this.currentUser = null;
-                this.currentProfile = null;
-                return {
-                    success: false,
-                    needsConfirmation: true,
-                    error: MESSAGES.AUTH.LOGIN_EMAIL_NOT_CONFIRMED,
-                    email: email
-                };
-            }
-
             this.sessionRepository.save(data.user);
 
             return {
@@ -378,29 +352,8 @@ export class AuthService {
     // ─── CUSTOM EMAIL FLOW (sin Supabase emails) ─────────────────
 
     async sendConfirmationEmail(email, userName) {
-        try {
-            const token = crypto.randomUUID ? crypto.randomUUID() : 
-                Array.from({ length: 32 }, () => Math.random().toString(36)[2]).join('');
-            const expiresAt = new Date(Date.now() + 3600000).toISOString();
-
-            await this.resetTokenRepo.invalidateByEmail(email);
-            await this.resetTokenRepo.create(email, token, expiresAt, 'confirm');
-
-            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-            const { error: fnError } = await supabase.functions.invoke('send-email', {
-                body: { email, token, type: 'confirm', userName, publicUrl }
-            });
-
-            if (fnError) {
-                console.error('[sendConfirmationEmail] Error:', fnError);
-                return { success: false, error: 'Error al enviar correo de confirmación.' };
-            }
-
-            return { success: true, message: 'Te enviamos un correo de confirmación.' };
-        } catch (error) {
-            console.error('[sendConfirmationEmail] Exception:', error);
-            return { success: false, error: error.message };
-        }
+        // Desactivado por ahora - el registro es directo
+        return { success: true };
     }
 
     async confirmEmailWithToken(token) {
@@ -434,16 +387,10 @@ export class AuthService {
             await this.resetTokenRepo.create(email, token, expiresAt, 'reset');
 
             const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-            const { error: fnError } = await supabase.functions.invoke('send-email', {
-                body: { email, token, type: 'reset', publicUrl }
-            });
+            const resetUrl = `${publicUrl}/#reset-password/${token}`;
 
-            if (fnError) {
-                console.error('[requestPasswordReset] Error:', fnError);
-                return { success: false, error: 'Error al enviar el correo.' };
-            }
-
-            return { success: true, message: 'Te enviamos un link de recuperación a tu correo.' };
+            console.log('[Password Reset] Link:', resetUrl);
+            return { success: true, localLink: resetUrl, message: `Reset: ${resetUrl}` };
         } catch (error) {
             console.error('[requestPasswordReset] Exception:', error);
             return { success: false, error: 'Error al procesar la solicitud.' };
