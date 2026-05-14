@@ -70,6 +70,25 @@ export class AdminController {
             reviewDetail: document.getElementById('review-product-detail'),
             btnCloseReview: document.querySelector('.btn-close-review'),
 
+            // Admin Product CRUD
+            allProductsList: document.getElementById('admin-all-products-list'),
+            btnLoadAllProducts: document.getElementById('btn-load-all-products'),
+            btnCreateAnyProduct: document.getElementById('btn-create-any-product'),
+            productSearch: document.getElementById('admin-product-search'),
+            adminProductModal: document.getElementById('modal-admin-product'),
+            btnCloseAdminProduct: document.querySelector('.btn-close-admin-product'),
+            btnCancelAdminProduct: document.getElementById('btn-cancel-admin-product'),
+            adminProductForm: document.getElementById('form-admin-product'),
+            adminProdNombre: document.getElementById('admin-prod-nombre'),
+            adminProdPrecio: document.getElementById('admin-prod-precio'),
+            adminProdCategoria: document.getElementById('admin-prod-categoria'),
+            adminProdVendedor: document.getElementById('admin-prod-vendedor'),
+            adminProdEstado: document.getElementById('admin-prod-estado'),
+            adminProdRevision: document.getElementById('admin-prod-revision'),
+            adminProdDescripcion: document.getElementById('admin-prod-descripcion'),
+            adminProdImagen: document.getElementById('admin-prod-imagen'),
+            adminProductFormTitle: document.getElementById('admin-product-form-title'),
+
             // General
             adminError: document.getElementById('admin-error')
         };
@@ -78,6 +97,8 @@ export class AdminController {
         this.editingCategoryId = null;
         this.allUsers = []; // Store all users for filtering
         this.allCategories = []; // Store all categories for filtering
+        this.allProducts = []; // Store all products for admin CRUD
+        this.editingProductId = null; // Product being edited
     }
 
     bindEvents() {
@@ -150,6 +171,41 @@ export class AdminController {
             });
         }
 
+        // Admin Product CRUD - Load all products
+        if (this.elements.btnLoadAllProducts) {
+            this.elements.btnLoadAllProducts.addEventListener('click', () => this.loadAllProducts());
+        }
+
+        // Admin Product CRUD - Create new product
+        if (this.elements.btnCreateAnyProduct) {
+            this.elements.btnCreateAnyProduct.addEventListener('click', () => this.openAdminProductModal());
+        }
+
+        // Product search filter
+        if (this.elements.productSearch) {
+            this.elements.productSearch.addEventListener('input', (e) => {
+                this.filterAllProducts(e.target.value);
+            });
+        }
+
+        // Admin Product Modal - Close
+        if (this.elements.btnCloseAdminProduct) {
+            this.elements.btnCloseAdminProduct.addEventListener('click', () => this.closeAdminProductModal());
+        }
+        if (this.elements.btnCancelAdminProduct) {
+            this.elements.btnCancelAdminProduct.addEventListener('click', () => this.closeAdminProductModal());
+        }
+        if (this.elements.adminProductModal) {
+            this.elements.adminProductModal.addEventListener('click', (e) => {
+                if (e.target === this.elements.adminProductModal) this.closeAdminProductModal();
+            });
+        }
+
+        // Admin Product Form - Submit
+        if (this.elements.adminProductForm) {
+            this.elements.adminProductForm.addEventListener('submit', (e) => this.handleAdminProductSubmit(e));
+        }
+
         // Close modal on outside click
         if (this.elements.reorderModal) {
             window.addEventListener('click', (e) => {
@@ -220,6 +276,18 @@ export class AdminController {
                 }
                 if (e.target.dataset.action === 'edit-category') {
                     this.populateCategoryEditForm(e.target.dataset.categoryId);
+                }
+            });
+        }
+
+        // Admin All Products - Event delegation
+        if (this.elements.allProductsList) {
+            this.elements.allProductsList.addEventListener('click', (e) => {
+                if (e.target.dataset.action === 'edit-product') {
+                    this.openAdminProductModal(e.target.dataset.productId);
+                }
+                if (e.target.dataset.action === 'delete-product') {
+                    this.handleAdminDeleteProduct(e.target.dataset.productId);
                 }
             });
         }
@@ -298,6 +366,182 @@ export class AdminController {
     closeReviewModal() {
         if (this.elements.reviewModal) {
             this.elements.reviewModal.style.display = 'none';
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    //  ADMIN PRODUCT CRUD
+    // ═══════════════════════════════════════════════
+
+    async loadAllProducts() {
+        try {
+            const products = await this.adminService.getAllProducts();
+            this.allProducts = products;
+            this.renderAllProducts(products);
+        } catch (error) {
+            toast.error(error.message);
+            console.error('Error loading all products:', error);
+        }
+    }
+
+    renderAllProducts(products) {
+        const container = this.elements.allProductsList;
+        if (!container) return;
+
+        if (!products || products.length === 0) {
+            const searchTerm = this.elements.productSearch?.value?.trim();
+            container.innerHTML = searchTerm
+                ? `<p class="empty-message">No se encontraron productos que coincidan con "${UIUtils.escapeHtml(searchTerm)}"</p>`
+                : '<p class="empty-message">No hay productos registrados</p>';
+            return;
+        }
+
+        container.innerHTML = products.map(product => {
+            const revClass = `rol-badge-${product.estado_revision || 'pendiente'}`;
+            const revLabel = product.estado_revision || 'pendiente';
+            const estadoLabel = product.estado === 'inactivo' ? 'Inactivo' : product.estado === 'vendido' ? 'Vendido' : 'Disponible';
+            return `
+            <div class="admin-product-full-item" data-product-id="${product.id}">
+                <div class="admin-product-full-info">
+                    <h4>${UIUtils.escapeHtml(product.nombre)}</h4>
+                    <p>$${parseFloat(product.precio).toFixed(2)} — ${UIUtils.escapeHtml(product.vendedor?.nombre || 'N/A')}</p>
+                    <span class="rol-badge ${revClass}">${revLabel}</span>
+                    <span class="rol-badge" style="background:#9E9E9E;color:white;padding:2px 8px;border-radius:4px;font-size:0.75rem;">${estadoLabel}</span>
+                </div>
+                <div class="admin-product-full-actions">
+                    <button class="btn-action btn-edit-category" data-action="edit-product" data-product-id="${product.id}">Editar</button>
+                    <button class="btn-action btn-delete-category" data-action="delete-product" data-product-id="${product.id}">Eliminar</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    filterAllProducts(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return this.renderAllProducts(this.allProducts);
+        const filtered = this.allProducts.filter(p =>
+            (p.nombre || '').toLowerCase().includes(term)
+        );
+        this.renderAllProducts(filtered);
+    }
+
+    async openAdminProductModal(productId) {
+        this.editingProductId = null;
+
+        // Load categories and users for dropdowns
+        try {
+            const cats = await this.adminService.categoryRepository?.getAll?.() || window.categories || [];
+            const users = await this.adminService.getAllUsers();
+
+            const catSelect = this.elements.adminProdCategoria;
+            if (catSelect) {
+                catSelect.innerHTML = '<option value="">Seleccionar categoría</option>' +
+                    cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            }
+
+            const vendSelect = this.elements.adminProdVendedor;
+            if (vendSelect) {
+                vendSelect.innerHTML = '<option value="">Seleccionar vendedor</option>' +
+                    users.map(u => `<option value="${u.user_id}">${UIUtils.escapeHtml(u.nombre)} — ${UIUtils.escapeHtml(u.email)}</option>`).join('');
+            }
+
+            if (productId) {
+                // Edit mode
+                const product = this.allProducts.find(p => p.id.toString() === productId.toString());
+                if (!product) { toast.error('Producto no encontrado'); return; }
+                this.editingProductId = productId;
+                if (this.elements.adminProductFormTitle) this.elements.adminProductFormTitle.textContent = 'Editar Producto';
+                if (this.elements.adminProdNombre) this.elements.adminProdNombre.value = product.nombre || '';
+                if (this.elements.adminProdPrecio) this.elements.adminProdPrecio.value = product.precio || '';
+                if (this.elements.adminProdDescripcion) this.elements.adminProdDescripcion.value = product.descripcion || '';
+                if (this.elements.adminProdImagen) {
+                    const img = product.imagenes_urls?.[0] || product.imagen_url || '';
+                    this.elements.adminProdImagen.value = img;
+                }
+                if (catSelect) catSelect.value = product.categoria_id || '';
+                if (vendSelect) vendSelect.value = product.vendedor_id || '';
+                if (this.elements.adminProdEstado) this.elements.adminProdEstado.value = product.estado || 'disponible';
+                if (this.elements.adminProdRevision) this.elements.adminProdRevision.value = product.estado_revision || 'pendiente';
+            } else {
+                // Create mode
+                if (this.elements.adminProductFormTitle) this.elements.adminProductFormTitle.textContent = 'Crear Producto';
+                this.resetAdminProductForm();
+            }
+
+            if (this.elements.adminProductModal) this.elements.adminProductModal.style.display = 'block';
+        } catch (error) {
+            toast.error('Error al cargar datos: ' + error.message);
+        }
+    }
+
+    closeAdminProductModal() {
+        if (this.elements.adminProductModal) this.elements.adminProductModal.style.display = 'none';
+        this.editingProductId = null;
+    }
+
+    resetAdminProductForm() {
+        if (this.elements.adminProductForm) this.elements.adminProductForm.reset();
+        if (this.elements.adminProdEstado) this.elements.adminProdEstado.value = 'disponible';
+        if (this.elements.adminProdRevision) this.elements.adminProdRevision.value = 'pendiente';
+    }
+
+    async handleAdminProductSubmit(event) {
+        event.preventDefault();
+        const nombre = this.elements.adminProdNombre?.value?.trim();
+        const precio = this.elements.adminProdPrecio?.value;
+        const categoriaId = this.elements.adminProdCategoria?.value;
+        const vendedorId = this.elements.adminProdVendedor?.value;
+        const estado = this.elements.adminProdEstado?.value || 'disponible';
+        const revision = this.elements.adminProdRevision?.value || 'pendiente';
+        const descripcion = this.elements.adminProdDescripcion?.value?.trim();
+        const imagenUrl = this.elements.adminProdImagen?.value?.trim();
+
+        if (!nombre || !precio || !vendedorId) {
+            toast.error('Completá los campos obligatorios: nombre, precio y vendedor');
+            return;
+        }
+
+        const productData = {
+            nombre,
+            precio: parseFloat(precio),
+            categoria_id: categoriaId ? parseInt(categoriaId) : null,
+            vendedor_id: vendedorId,
+            estado,
+            estado_revision: revision,
+            descripcion,
+            imagenes_urls: imagenUrl ? [imagenUrl] : [],
+            imagenes_paths: []
+        };
+
+        try {
+            const result = this.editingProductId
+                ? await this.adminService.adminUpdateProduct(this.editingProductId, productData)
+                : await this.adminService.adminCreateProduct(productData);
+
+            if (result.success) {
+                toast.success(result.message);
+                this.closeAdminProductModal();
+                await this.loadAllProducts();
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error('Error: ' + error.message);
+        }
+    }
+
+    async handleAdminDeleteProduct(productId) {
+        if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+        try {
+            const result = await this.adminService.adminDeleteProduct(productId);
+            if (result.success) {
+                toast.success(result.message);
+                await this.loadAllProducts();
+            } else {
+                toast.error(result.error);
+            }
+        } catch (error) {
+            toast.error(error.message);
         }
     }
 
@@ -1057,6 +1301,9 @@ export class AdminController {
         } else if (tabId === 'gestion-usuarios' && this.elements.usersList) {
             const hasContent = this.elements.usersList.querySelector('.admin-user-item');
             if (!hasContent) this.loadUsers();
+        } else if (tabId === 'gestion-productos' && this.elements.allProductsList) {
+            const hasContent = this.elements.allProductsList.querySelector('.admin-product-full-item');
+            if (!hasContent) this.loadAllProducts();
         }
     }
 

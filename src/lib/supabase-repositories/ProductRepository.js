@@ -207,14 +207,54 @@ export class ProductRepository {
      * to bypass RLS SELECT policy issues when reading back the result
      */
     async updateEstado(id, newEstado) {
-        const { data, error } = await supabase
-            .rpc('toggle_product_visibility', {
-                p_product_id: id,
-                p_new_estado: newEstado
-            });
+        const { error } = await supabase
+            .from(this.table)
+            .update({
+                estado: newEstado,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id);
 
         if (error) throw new Error(error.message);
         return { success: true };
+    }
+
+    /**
+     * Admin full update - includes all fields like vendedor_id, estado_revision
+     */
+    async adminUpdate(id, product) {
+        const { data, error } = await supabase
+            .from(this.table)
+            .update({
+                nombre: product.nombre,
+                precio: parseFloat(product.precio),
+                descripcion: product.descripcion,
+                imagenes_urls: product.imagenes_urls,
+                imagenes_paths: product.imagenes_paths,
+                categoria_id: product.categoria_id,
+                estado: product.estado,
+                estado_revision: product.estado_revision,
+                vendedor_id: product.vendedor_id,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select(`
+                *,
+                categorias:categoria_id(
+                    id,
+                    nombre,
+                    icono
+                ),
+                vendedor:vendedor_id(
+                    user_id,
+                    nombre,
+                    email
+                )
+            `)
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
     }
 
     async markAsSold(id) {

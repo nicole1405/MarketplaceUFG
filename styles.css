@@ -2045,6 +2045,112 @@ body.dark-mode .modal-perfil .form-group input:focus {
     margin-top: 0.25rem;
 }
 
+/* Admin Full Product List */
+.admin-product-full-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--bg-light);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.admin-product-full-item:hover {
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.admin-product-full-info {
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 140px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.admin-product-full-info h4 {
+    color: var(--text-dark);
+    margin: 0;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.admin-product-full-info p {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.admin-product-full-info .rol-badge {
+    display: inline-block;
+    margin-top: 0.25rem;
+    width: fit-content;
+}
+
+.admin-product-full-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Admin Product Modal */
+.modal-admin-product-content {
+    max-width: 650px;
+    padding: 2rem;
+}
+
+.admin-product-form-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 1rem;
+}
+
+.admin-product-form-header h2 {
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.admin-product-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 0;
+}
+
+.admin-product-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.admin-product-form .form-actions {
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .admin-product-full-info {
+        max-width: 100%;
+    }
+    .admin-product-full-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .admin-product-full-actions {
+        width: 100%;
+    }
+    .admin-product-full-actions .btn-action {
+        flex: 1;
+        text-align: center;
+    }
+    .admin-product-form .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Reorder Modal */
 .modal-reorder-content {
     max-width: 600px;

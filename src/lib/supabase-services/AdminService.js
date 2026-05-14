@@ -133,6 +133,83 @@ export class AdminService {
             };
         }
     }
+
+    // ─── Admin Product CRUD ───────────────────────────
+
+    async getAllProducts() {
+        this.authService.requireAdmin();
+        return await this.productRepository.getAllForAdmin();
+    }
+
+    async adminCreateProduct(data) {
+        this.authService.requireAdmin();
+        try {
+            const product = await this.productRepository.create({
+                nombre: data.nombre,
+                precio: parseFloat(data.precio),
+                descripcion: data.descripcion,
+                imagenes_urls: data.imagenes_urls || [],
+                imagenes_paths: data.imagenes_paths || [],
+                vendedor_id: data.vendedor_id,
+                categoria_id: data.categoria_id || null,
+                estado: data.estado || 'disponible',
+                estado_revision: data.estado_revision || 'pendiente'
+            });
+            return {
+                success: true,
+                product,
+                message: 'Producto creado exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async adminUpdateProduct(id, data) {
+        this.authService.requireAdmin();
+        try {
+            const updated = await this.productRepository.adminUpdate(id, {
+                nombre: data.nombre,
+                precio: parseFloat(data.precio),
+                descripcion: data.descripcion,
+                imagenes_urls: data.imagenes_urls || [],
+                imagenes_paths: data.imagenes_paths || [],
+                categoria_id: data.categoria_id || null,
+                estado: data.estado || 'disponible',
+                estado_revision: data.estado_revision,
+                vendedor_id: data.vendedor_id
+            });
+            return {
+                success: true,
+                product: updated,
+                message: 'Producto actualizado exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    async adminDeleteProduct(id) {
+        this.authService.requireAdmin();
+        try {
+            await this.productRepository.delete(id);
+            return {
+                success: true,
+                message: 'Producto eliminado exitosamente'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
 }
 
 export default AdminService;
