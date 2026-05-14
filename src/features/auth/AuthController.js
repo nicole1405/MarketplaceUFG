@@ -316,22 +316,6 @@ export class AuthController {
             this.showLogin();
         });
     }
-            const result = await this.authService.resendConfirmation(email);
-            const status = document.getElementById('resend-register-status');
-            if (status) {
-                status.style.display = 'block';
-                status.textContent = result.success 
-                    ? MESSAGES.AUTH.RESEND_CONFIRMATION_SUCCESS 
-                    : result.error;
-            }
-            setTimeout(() => {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = 'Reenviar correo';
-                }
-            }, 30000);
-        });
-    }
 
     async checkSession() {
         const hash = window.location.hash;
@@ -354,6 +338,7 @@ export class AuthController {
         }
 
         // Custom password reset link
+        if (hash && hash.startsWith('#reset-password/')) {
             const token = hash.split('#reset-password/')[1];
             if (token) {
                 this._pendingResetToken = token;
