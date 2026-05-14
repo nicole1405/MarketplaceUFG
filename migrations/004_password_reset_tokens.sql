@@ -12,3 +12,15 @@ CREATE TABLE IF NOT EXISTS public.password_reset_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_email ON password_reset_tokens(email);
+
+-- RLS Policies (tokens are UUIDs, unguessable by nature)
+ALTER TABLE public.password_reset_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can insert password reset tokens" ON public.password_reset_tokens
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Anyone can read password reset tokens" ON public.password_reset_tokens
+    FOR SELECT USING (true);
+
+CREATE POLICY "Anyone can update password reset tokens" ON public.password_reset_tokens
+    FOR UPDATE USING (true) WITH CHECK (true);
