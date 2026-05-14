@@ -286,7 +286,10 @@ export class AdminController {
         if (this.elements.usersList) {
             this.elements.usersList.addEventListener('click', (e) => {
                 if (e.target.dataset.action === 'change-role') {
-                    this.handleChangeRole(e.target.dataset.userId, e.target.dataset.currentRole);
+                    const container = e.target.closest('.role-edit-container');
+                    const select = container?.querySelector('.role-select');
+                    const newRole = select?.value || e.target.dataset.currentRole;
+                    this.handleChangeRole(e.target.dataset.userId, e.target.dataset.currentRole, newRole);
                 }
             });
         }
@@ -956,18 +959,25 @@ export class AdminController {
                     </div>
                 </div>
                 <div class="admin-user-actions">
-                    <button class="btn-action btn-change-role" 
-                        data-action="change-role" 
-                        data-user-id="${user.user_id || user.id}" 
-                        data-current-role="${user.rol}">
-                        ${user.rol === 'anunciante' ? 'Ascender a Moderador' : user.rol === 'moderador' ? 'Ascender a Admin' : 'Cambiar a Anunciante'}
-                    </button>
+                    <div class="role-edit-container">
+                        <select class="role-select" data-user-id="${user.user_id || user.id}" data-current-role="${user.rol}">
+                            <option value="anunciante" ${user.rol === 'anunciante' ? 'selected' : ''}>Anunciante</option>
+                            <option value="moderador" ${user.rol === 'moderador' ? 'selected' : ''}>Moderador</option>
+                            <option value="admin" ${user.rol === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                        <button class="btn-action btn-change-role" 
+                            data-action="change-role" 
+                            data-user-id="${user.user_id || user.id}" 
+                            data-current-role="${user.rol}">
+                            Guardar
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
     }
 
-    async handleChangeRole(userId, currentRole) {
+    async handleChangeRole(userId, currentRole, newRole) {
         // Prevent self-demotion: admin cannot change their own role
         const currentAdminId = this.adminService?.authService?.getCurrentUser?.()?.id;
         if (currentAdminId && userId === currentAdminId) {
@@ -975,11 +985,12 @@ export class AdminController {
             return;
         }
 
-        if (!confirm(MESSAGES.ADMIN.ROLE_CHANGE_CONFIRM)) return;
+        if (newRole === currentRole) {
+            toast.warning?.('El usuario ya tiene ese rol') || toast.info('El usuario ya tiene ese rol');
+            return;
+        }
 
-        // Cycle: anunciante → moderador → admin → anunciante
-        const roleCycle = { 'anunciante': 'moderador', 'moderador': 'admin', 'admin': 'anunciante' };
-        const newRole = roleCycle[currentRole] || 'anunciante';
+        if (!confirm(`¿Estás seguro de cambiar el rol a "${newRole}"?`)) return;
 
         try {
             const result = await this.adminService.changeUserRole(userId, newRole);

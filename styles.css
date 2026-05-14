@@ -2826,6 +2826,33 @@ body.dark-mode .select-search-target {
     margin-left: 1rem;
 }
 
+.role-edit-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.role-select {
+    padding: 0.4rem 0.5rem;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background-color: var(--white);
+    color: var(--text-dark);
+    cursor: pointer;
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+body.dark-mode .role-select {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border);
+}
+
 /* Admin Category Items */
 .admin-category-item {
     display: flex;
