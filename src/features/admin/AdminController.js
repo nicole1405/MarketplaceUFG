@@ -321,6 +321,35 @@ export class AdminController {
         }
     }
 
+    /**
+     * Show/hide tabs based on user role.
+     * Moderators can only see productos-pendientes and gestion-categorias.
+     */
+    initTabsByRole() {
+        const isAdmin = this.adminService?.authService?.isAdmin?.();
+        const isModerador = this.adminService?.authService?.isModerador?.();
+
+        this.elements.tabButtons.forEach(btn => {
+            const tab = btn.dataset.tab;
+            if (tab === 'gestion-usuarios' || tab === 'gestion-productos') {
+                btn.style.display = isAdmin ? '' : 'none';
+            } else {
+                btn.style.display = '';
+            }
+        });
+
+        // If moderador and on a hidden tab, switch to first visible tab
+        if (!isAdmin && isModerador) {
+            const activeTab = document.querySelector('.admin-tab-btn.active');
+            if (activeTab) {
+                const tab = activeTab.dataset.tab;
+                if (tab === 'gestion-usuarios' || tab === 'gestion-productos') {
+                    this.switchTab('productos-pendientes');
+                }
+            }
+        }
+    }
+
     async loadPendingProducts() {
         try {
             const products = await this.adminService.getPendingProducts();
@@ -931,7 +960,7 @@ export class AdminController {
                         data-action="change-role" 
                         data-user-id="${user.user_id || user.id}" 
                         data-current-role="${user.rol}">
-                        ${user.rol === 'admin' ? 'Cambiar a Anunciante' : 'Cambiar a Admin'}
+                        ${user.rol === 'anunciante' ? 'Ascender a Moderador' : user.rol === 'moderador' ? 'Ascender a Admin' : 'Cambiar a Anunciante'}
                     </button>
                 </div>
             </div>
@@ -948,7 +977,9 @@ export class AdminController {
 
         if (!confirm(MESSAGES.ADMIN.ROLE_CHANGE_CONFIRM)) return;
 
-        const newRole = currentRole === 'admin' ? 'anunciante' : 'admin';
+        // Cycle: anunciante → moderador → admin → anunciante
+        const roleCycle = { 'anunciante': 'moderador', 'moderador': 'admin', 'admin': 'anunciante' };
+        const newRole = roleCycle[currentRole] || 'anunciante';
 
         try {
             const result = await this.adminService.changeUserRole(userId, newRole);

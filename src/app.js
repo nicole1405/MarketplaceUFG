@@ -297,7 +297,7 @@ class Application {
         // Show/hide admin navigation based on role
         const navAdmin = document.getElementById('nav-admin');
         if (navAdmin) {
-            navAdmin.style.display = this.services.auth.isAdmin() ? 'inline-flex' : 'none';
+            navAdmin.style.display = (this.services.auth.isAdmin() || this.services.auth.isModerador()) ? 'inline-flex' : 'none';
         }
 
         await this.loadCategories();
@@ -350,8 +350,12 @@ class Application {
                 this.controllers.chat.renderConversations();
                 this.controllers.chat.updateBadge();
             } else if (viewName === 'admin') {
+                this.controllers.admin.initTabsByRole();
                 this.controllers.admin.loadPendingProducts();
-                this.controllers.admin.loadUsers();
+                if (this.services.auth.isAdmin()) {
+                    this.controllers.admin.loadUsers();
+                    this.controllers.admin.loadAllProducts();
+                }
                 this.controllers.admin.loadCategories();
             }
         }

@@ -187,11 +187,27 @@ export class AuthService {
         return user;
     }
 
+    requireModerador() {
+        const user = this.requireAuth();
+        if (!this.isModerador()) {
+            throw new Error('Only moderators and admins can perform this action');
+        }
+        return user;
+    }
+
     getCurrentProfile() {
         return this.currentProfile;
     }
 
     isAdmin() {
+        return this.currentProfile?.rol === 'admin';
+    }
+
+    isModerador() {
+        return this.currentProfile?.rol === 'moderador' || this.currentProfile?.rol === 'admin';
+    }
+
+    isSuperAdmin() {
         return this.currentProfile?.rol === 'admin';
     }
 
@@ -208,9 +224,8 @@ export class AuthService {
                 profileData.avatar_url = avatar_url;
             }
             
-            // Non-admin users cannot change their role
-            const isAdmin = this.isAdmin();
-            if (!isAdmin) {
+            // Only super admins can change their role
+            if (!this.isSuperAdmin()) {
                 delete profileData.rol;
             }
             
@@ -230,14 +245,14 @@ export class AuthService {
 
     async updateUserRole(userId, newRol) {
         try {
-            if (!this.isAdmin()) {
+            if (!this.isSuperAdmin()) {
                 return {
                     success: false,
                     error: 'Only administrators can change user roles'
                 };
             }
 
-            if (newRol !== 'admin' && newRol !== 'anunciante') {
+            if (newRol !== 'admin' && newRol !== 'moderador' && newRol !== 'anunciante') {
                 return {
                     success: false,
                     error: 'Invalid role. Must be "admin" or "anunciante"'
@@ -416,117 +431,5 @@ export class AuthService {
             nombre: this.currentProfile?.nombre || this.currentUser.email.split('@')[0]
         };
     }
-
-    getUserId() {
-        return this.currentUser?.id || null;
-    }
-
-    requireAuth() {
-        if (!this.isAuthenticated()) {
-            throw new Error(MESSAGES.AUTH.REQUIRED_LOGIN);
-        }
-        return this.getCurrentUser();
-    }
-
-    requireAdmin() {
-        const user = this.requireAuth();
-        if (!this.isAdmin()) {
-            throw new Error('Only administrators can perform this action');
-        }
-        return user;
-    }
-
-    getCurrentProfile() {
-        return this.currentProfile;
-    }
-
-    isAdmin() {
-        return this.currentProfile?.rol === 'admin';
-    }
-
-    async updateProfile({ nombre, avatar_url, delete_avatar }) {
-        try {
-            const profileData = {
-                nombre,
-                updated_at: new Date().toISOString()
-            };
-            
-            if (delete_avatar) {
-                profileData.avatar_url = null;
-            } else if (avatar_url) {
-                profileData.avatar_url = avatar_url;
-            }
-            
-            // Non-admin users cannot change their role
-            const isAdmin = this.isAdmin();
-            if (!isAdmin) {
-                delete profileData.rol;
-            }
-            
-            const updated = await this.profileRepository.updateByUserId(this.currentUser.id, profileData);
-            this.currentProfile = updated;
-            return {
-                success: true,
-                profile: updated
-            };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.message
-            };
-        }
-    }
-
-    async updateUserRole(userId, newRol) {
-        try {
-            if (!this.isAdmin()) {
-                return {
-                    success: false,
-                    error: 'Only administrators can change user roles'
-                };
-            }
-
-            if (newRol !== 'admin' && newRol !== 'anunciante') {
-                return {
-                    success: false,
-                    error: 'Invalid role. Must be "admin" or "anunciante"'
-                };
-            }
-
-            const updated = await this.profileRepository.updateByUserId(userId, {
-                rol: newRol,
-                updated_at: new Date().toISOString()
-            });
-
-            // If admin changed their own role, update currentProfile
-            if (userId === this.currentUser?.id) {
-                this.currentProfile = updated;
-            }
-
-            return {
-                success: true,
-                profile: updated
-            };
-        } catch (error) {
-            return {
-                success: false,
-                error: error.message
-            };
-        }
-    }
-
-    onAuthStateChange(callback) {
-        return this.sessionRepository.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                this.currentUser = session.user;
-                this.currentProfile = await this.profileRepository.getByUserId(session.user.id);
-            } else if (event === 'SIGNED_OUT') {
-                this.currentUser = null;
-                this.currentProfile = null;
-            }
-            callback(event, session);
-        });
-    }
-}
 
 export default AuthService;

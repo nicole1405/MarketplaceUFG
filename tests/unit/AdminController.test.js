@@ -208,7 +208,7 @@ describe('AdminController - Unit Tests', () => {
 
             const list = document.getElementById('admin-users-list');
             expect(list.innerHTML).toContain('Cambiar a Anunciante');
-            expect(list.innerHTML).toContain('Cambiar a Admin');
+            expect(list.innerHTML).toContain('Ascender a Moderador');
         });
     });
 
@@ -350,7 +350,7 @@ describe('AdminController - Unit Tests', () => {
             const controller = new AdminController(mockAdminService, mockEventBus);
             await controller.handleChangeRole('user-1', 'anunciante');
 
-            expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'admin');
+            expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'moderador');
             expect(mockToast.success).toHaveBeenCalled();
         });
 

@@ -325,7 +325,7 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             const controller = new AdminController(mockAdminService, mockEventBus);
             await controller.handleChangeRole('user-2', 'anunciante');
 
-            expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-2', 'admin');
+            expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-2', 'moderador');
             expect(mockToast.success).toHaveBeenCalled();
         });
 

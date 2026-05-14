@@ -1,7 +1,9 @@
 /**
  * Admin Service for Supabase
- * Manages admin-only operations: product moderation, user management, category CRUD
- * Security: All methods require admin role via authService.requireAdmin()
+ * Manages admin operations: product moderation, user management, category CRUD
+ * Security: 
+ *   - requireModerador() → moderators and admins (approve, categories)
+ *   - requireAdmin() → admins only (user management, full product CRUD)
  */
 
 export class AdminService {
@@ -13,13 +15,13 @@ export class AdminService {
     }
 
     async getPendingProducts() {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
         const allProducts = await this.productRepository.getAllForAdmin();
         return allProducts.filter(p => p.estado_revision === 'pendiente');
     }
 
     async approveProduct(id) {
-        const admin = this.authService.requireAdmin();
+        const admin = this.authService.requireModerador();
         const approved = await this.productRepository.approve(id, admin.id);
         return {
             success: true,
@@ -36,7 +38,7 @@ export class AdminService {
             };
         }
 
-        const admin = this.authService.requireAdmin();
+        const admin = this.authService.requireModerador();
         const rejected = await this.productRepository.reject(id, admin.id, motivo.trim());
         return {
             success: true,
@@ -53,10 +55,10 @@ export class AdminService {
     async changeUserRole(userId, newRol) {
         this.authService.requireAdmin();
 
-        if (newRol !== 'admin' && newRol !== 'anunciante') {
+        if (newRol !== 'admin' && newRol !== 'moderador' && newRol !== 'anunciante') {
             return {
                 success: false,
-                error: 'Rol invalido. Debe ser "admin" o "anunciante"'
+                error: 'Rol invalido. Debe ser "admin", "moderador" o "anunciante"'
             };
         }
 
@@ -65,7 +67,7 @@ export class AdminService {
     }
 
     async createCategory(data) {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
 
         if (!data.nombre || data.nombre.trim() === '') {
             return {
@@ -95,7 +97,7 @@ export class AdminService {
     }
 
     async updateCategory(id, data) {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
 
         try {
             const category = await this.categoryRepository.update(id, {
@@ -118,7 +120,7 @@ export class AdminService {
     }
 
     async deleteCategory(id) {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
 
         try {
             await this.categoryRepository.delete(id);
@@ -137,7 +139,7 @@ export class AdminService {
     // ─── Admin Product CRUD ───────────────────────────
 
     async getAllProducts() {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
         return await this.productRepository.getAllForAdmin();
     }
 
