@@ -2894,7 +2894,8 @@ body.dark-mode .select-search-target {
 .rol-badge-aprobado,
 .rol-badge-rechazado,
 .rol-badge-admin,
-.rol-badge-anunciante {
+.rol-badge-anunciante,
+.rol-badge-moderador {
     display: inline-block;
     padding: 0.2rem 0.6rem;
     border-radius: 12px;
@@ -2932,6 +2933,11 @@ body.dark-mode .select-search-target {
 .rol-badge-anunciante {
     background-color: #F3E5F5;
     color: #7B1FA2;
+}
+
+.rol-badge-moderador {
+    background-color: #E8F5E9;
+    color: #2E7D32;
 }
 
 .btn-action {
