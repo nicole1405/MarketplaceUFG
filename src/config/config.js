@@ -16,24 +16,6 @@ export const CONFIG = {
         ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkeGJsZGt4b2tjbHRzYXlobnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNDI5MjcsImV4cCI6MjA4OTYxODkyN30.TyhJrLCC6q3czpZyz3EoGOtra9_LSpZ00189d3zszgE',
         STORAGE_BUCKET: 'fotos_anuncios'
     },
-
-    EMAILJS: {
-        /**
-         * EmailJS configuration for sending emails without backend.
-         * Registrate gratis en https://www.emailjs.com
-         * 
-         * Paso 1: Crear cuenta y conectar un servicio de email
-         * Paso 2: Crear un template "confirm" con variables:
-         *   {{to_name}}, {{to_email}}, {{confirm_url}}
-         * Paso 3: Crear un template "reset" con variables:
-         *   {{to_name}}, {{to_email}}, {{reset_url}}
-         * Paso 4: Copiar acá los IDs
-         */
-        SERVICE_ID: '',        // Ej: 'service_abc123'
-        TEMPLATE_CONFIRM: '',  // Ej: 'template_confirm_xyz'
-        TEMPLATE_RESET: '',    // Ej: 'template_reset_xyz'
-        PUBLIC_KEY: ''         // Ej: 'user_abc123'
-    },
     
     VALIDATION: {
         MIN_PASSWORD_LENGTH: 6,

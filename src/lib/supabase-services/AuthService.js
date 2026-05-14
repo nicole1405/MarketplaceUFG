@@ -18,20 +18,6 @@ export class AuthService {
         this.resetTokenRepo = new PasswordResetTokenRepository();
     }
 
-    /**
-     * Get the redirect URL for email links.
-     * Uses the configured PUBLIC_URL if set, otherwise falls back to current origin.
-     */
-    getRedirectUrl() {
-        if (CONFIG.APP.PUBLIC_URL) {
-            return CONFIG.APP.PUBLIC_URL;
-        }
-        if (typeof window !== 'undefined' && window.location) {
-            return window.location.origin;
-        }
-        return 'http://localhost:5500';
-    }
-
     async initialize() {
         const session = await this.sessionRepository.getSession();
         if (session) {
