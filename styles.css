@@ -2068,6 +2068,7 @@ body.dark-mode .modal-perfil .form-group input:focus {
     max-width: calc(100% - 140px);
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.25rem;
 }
 
@@ -2084,12 +2085,17 @@ body.dark-mode .modal-perfil .form-group input:focus {
     color: var(--text-light);
     font-size: 0.85rem;
     margin: 0;
+    width: 100%;
 }
 
 .admin-product-full-info .rol-badge {
     display: inline-block;
     margin-top: 0.25rem;
-    width: fit-content;
+    align-self: flex-start;
+}
+
+.admin-product-full-info .rol-badge + .rol-badge {
+    margin-left: 0;
 }
 
 .admin-product-full-actions {
