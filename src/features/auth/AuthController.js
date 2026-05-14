@@ -174,58 +174,9 @@ export class AuthController {
             eventBus.emit(EVENTS.AUTH.LOGIN, result.user);
             this.showApp();
         } else if (result.needsConfirmation) {
-            // Show confirmation error with resend option
-            this.showEmailConfirmationError(email);
+            toast.error(result.error);
         } else {
             toast.error(result.error);
-        }
-    }
-
-    showEmailConfirmationError(email) {
-        const loginForm = this.elements.loginForm?.querySelector('form');
-        if (!loginForm) return;
-
-        // Remove existing confirmation message
-        const existingMsg = document.getElementById('email-confirm-error');
-        if (existingMsg) existingMsg.remove();
-
-        const msgDiv = document.createElement('div');
-        msgDiv.id = 'email-confirm-error';
-        msgDiv.className = 'auth-confirm-message';
-        msgDiv.innerHTML = `
-            <div class="confirm-error-content">
-                <p>${MESSAGES.AUTH.LOGIN_EMAIL_NOT_CONFIRMED}</p>
-                <button type="button" id="btn-resend-confirmation" class="btn-link">Reenviar correo de confirmacion</button>
-                <span id="resend-status" style="display:none; color: var(--success); font-size: 0.85rem;"></span>
-            </div>
-        `;
-
-        // Insert before the submit button
-        const submitBtn = loginForm.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.parentNode.insertBefore(msgDiv, submitBtn);
-        } else {
-            loginForm.appendChild(msgDiv);
-        }
-
-        const resendBtn = document.getElementById('btn-resend-confirmation');
-        if (resendBtn) {
-            resendBtn.addEventListener('click', async () => {
-                resendBtn.disabled = true;
-                resendBtn.textContent = 'Enviando...';
-                const result = await this.authService.sendConfirmationEmail(email);
-                const status = document.getElementById('resend-status');
-                if (status) {
-                    status.style.display = 'block';
-                    status.textContent = result.success 
-                        ? MESSAGES.AUTH.RESEND_CONFIRMATION_SUCCESS 
-                        : result.error;
-                }
-                setTimeout(() => {
-                    resendBtn.disabled = false;
-                    resendBtn.textContent = 'Reenviar correo de confirmacion';
-                }, 30000); // Disable for 30s to avoid spam
-            });
         }
     }
 
@@ -294,63 +245,24 @@ export class AuthController {
     async checkSession() {
         const hash = window.location.hash;
 
-        // Custom email confirmation link
-        event.preventDefault();
-        
-        const email = this.elements.forgotEmail?.value.trim().toLowerCase();
-        if (!email) {
-            toast.error('Ingresá tu correo electrónico');
-            return;
-        }
-
-        const submitBtn = event.target.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Enviando...';
-        }
-
-        // Usar nuestro propio sistema de reset (sin Supabase emails)
-        const result = await this.authService.requestPasswordReset(email);
-        
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Enviar Link de Recuperación';
-        }
-        
-        if (result.success) {
-            if (result.localLink) {
-                this.showForgotConfirmation(email, result.localLink);
-            } else {
-                this.showForgotConfirmation(email);
+        // Custom password reset link
+        if (hash && hash.startsWith('#reset-password/')) {
+            const token = hash.split('#reset-password/')[1];
+            if (token) {
+                this._pendingResetToken = token;
+                this.showLoginScreen();
+                this.showResetPassword();
+                return false;
             }
-        } else {
-            toast.error(result.error);
         }
-    }
 
-    showRateLimitError(message) {
-        const forgotForm = this.elements.forgotForm;
-        if (!forgotForm) return;
-
-        // Remove existing rate limit message
-        const existing = document.getElementById('rate-limit-error');
-        if (existing) existing.remove();
-
-        const errorDiv = document.createElement('div');
-        errorDiv.id = 'rate-limit-error';
-        errorDiv.className = 'auth-confirm-message';
-        errorDiv.style.cssText = 'margin-top: 1rem;';
-        errorDiv.innerHTML = `
-            <div class="confirm-error-content">
-                <p>⏱️ ${UIUtils.escapeHtml(message)}</p>
-                <p style="font-size:0.8rem; color:#666; margin-top:0.5rem;">Esperá unos minutos y volvé a intentarlo.</p>
-            </div>
-        `;
-
-        const form = forgotForm.querySelector('form');
-        if (form) {
-            form.appendChild(errorDiv);
+        const hasSession = await this.authService.initialize();
+        if (hasSession) {
+            this.showApp();
+            eventBus.emit(EVENTS.AUTH.SESSION_RESTORED, this.authService.getCurrentUser());
+            return true;
         }
+        return false;
     }
 
     showForgotConfirmation(email, localLink) {

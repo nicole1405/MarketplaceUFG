@@ -351,32 +351,6 @@ export class AuthService {
 
     // ─── CUSTOM EMAIL FLOW (sin Supabase emails) ─────────────────
 
-    async sendConfirmationEmail(email, userName) {
-        // Desactivado por ahora - el registro es directo
-        return { success: true };
-    }
-
-    async confirmEmailWithToken(token) {
-        const record = await this.validateResetToken(token, 'confirm');
-        if (!record) {
-            return { success: false, error: 'Link inválido o expirado.' };
-        }
-
-        try {
-            const { data, error } = await supabase.rpc('verify_user_email', {
-                p_email: record.email
-            });
-
-            if (error) throw error;
-
-            await this.resetTokenRepo.markAsUsed(record.id);
-            return { success: true, message: 'Email confirmado correctamente. Ahora podés iniciar sesión.' };
-        } catch (error) {
-            console.error('[confirmEmailWithToken] Error:', error);
-            return { success: false, error: 'Error al confirmar email.' };
-        }
-    }
-
     async requestPasswordReset(email) {
         try {
             const token = crypto.randomUUID ? crypto.randomUUID() : 
