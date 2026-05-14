@@ -438,6 +438,9 @@ export class AuthController {
         if (this.elements.forgotForm) {
             this.elements.forgotForm.style.display = 'none';
         }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'none';
+        }
     }
 
     showRegister() {
