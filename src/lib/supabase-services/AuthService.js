@@ -386,15 +386,21 @@ export class AuthService {
             await this.resetTokenRepo.invalidateByEmail(email);
             await this.resetTokenRepo.create(email, token, expiresAt, 'confirm');
 
-            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-            const isLocal = typeof window !== 'undefined' && 
-                (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+            const { error: fnError } = await supabase.functions.invoke('send-email', {
+                body: { email, token, type: 'confirm', userName }
+            });
 
-            if (isLocal) {
-                const link = `${publicUrl}/#confirm-email/${token}`;
-                console.log('[Confirm Email] Link:', link);
-                return { success: true, localLink: link, message: `Confirmá tu cuenta: ${link}` };
+            if (fnError) {
+                console.error('[sendConfirmationEmail] Error:', fnError);
+                return { success: false, error: 'Error al enviar correo de confirmación.' };
             }
+
+            return { success: true, message: 'Te enviamos un correo de confirmación.' };
+        } catch (error) {
+            console.error('[sendConfirmationEmail] Exception:', error);
+            return { success: false, error: error.message };
+        }
+    }
 
             // En producción: llamar a la Edge Function de Supabase
             const { error: fnError, data: fnData } = await supabase.functions.invoke('send-email', {
@@ -442,16 +448,6 @@ export class AuthService {
 
             await this.resetTokenRepo.invalidateByEmail(email);
             await this.resetTokenRepo.create(email, token, expiresAt, 'reset');
-
-            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-            const isLocal = typeof window !== 'undefined' && 
-                (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-
-            if (isLocal) {
-                const resetUrl = `${publicUrl}/#reset-password/${token}`;
-                console.log('[Password Reset] Link:', resetUrl);
-                return { success: true, localLink: resetUrl, message: `Reset: ${resetUrl}` };
-            }
 
             const { error: fnError } = await supabase.functions.invoke('send-email', {
                 body: { email, token, type: 'reset' }

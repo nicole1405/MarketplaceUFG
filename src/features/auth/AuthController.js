@@ -250,27 +250,14 @@ export class AuthController {
         });
 
         if (result.success) {
-            // Send confirmation email via Resend
-            const emailResult = await this.authService.sendConfirmationEmail(email, nombre);
-            
-            if (emailResult.success) {
-                if (emailResult.localLink) {
-                    this.showRegistrationConfirmation(email, emailResult.localLink);
-                } else {
-                    this.showRegistrationConfirmation(email);
-                }
-            } else {
-                // Registration worked but email failed
-                toast.error('Cuenta creada pero no se pudo enviar el correo de confirmación.');
-                this.showLogin();
-                this.clearRegisterForm();
-            }
-        } else {
+            // Send confirmation email via Edge Function
+            await this.authService.sendConfirmationEmail(email, nombre);
+            this.showRegistrationConfirmation(email);
             toast.error(result.error);
         }
     }
 
-    showRegistrationConfirmation(email, localLink) {
+    showRegistrationConfirmation(email) {
         const registerForm = this.elements.registerForm;
         if (!registerForm) return;
 
@@ -286,29 +273,15 @@ export class AuthController {
         const confirmDiv = document.createElement('div');
         confirmDiv.id = 'registration-confirmed';
         confirmDiv.className = 'auth-confirm-message';
-
-        if (localLink) {
-            confirmDiv.innerHTML = `
-                <div class="confirm-success-content">
-                    <span class="confirm-icon">🔧</span>
-                    <h3>Modo Desarrollo</h3>
-                    <p>Hacé clic para confirmar tu cuenta:</p>
-                    <p><a href="${localLink}" class="btn-primary" style="display:inline-block;padding:12px 24px;margin-top:10px;text-decoration:none;border-radius:8px;">Confirmar mi cuenta</a></p>
-                    <p style="font-size:0.8rem;margin-top:0.75rem;word-break:break-all;color:var(--text-light);">${localLink}</p>
-                    <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
-                </div>
-            `;
-        } else {
-            confirmDiv.innerHTML = `
-                <div class="confirm-success-content">
-                    <span class="confirm-icon">📧</span>
-                    <h3>Revisá tu correo</h3>
-                    <p>Te enviamos un link de confirmación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
-                    <p>Hacé clic en el link para activar tu cuenta y después iniciá sesión.</p>
-                    <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
-                </div>
-            `;
-        }
+        confirmDiv.innerHTML = `
+            <div class="confirm-success-content">
+                <span class="confirm-icon">📧</span>
+                <h3>Revisá tu correo</h3>
+                <p>Te enviamos un link de confirmación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                <p>Hacé clic en el link para activar tu cuenta y después iniciá sesión.</p>
+                <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+            </div>
+        `;
 
         registerForm.appendChild(confirmDiv);
 
@@ -381,12 +354,7 @@ export class AuthController {
         }
         
         if (result.success) {
-            if (result.localLink) {
-                // Show local dev link
-                this.showForgotConfirmation(email, result.localLink);
-            } else {
-                this.showForgotConfirmation(email);
-            }
+            this.showForgotConfirmation(email);
         } else {
             toast.error(result.error);
         }
@@ -417,7 +385,7 @@ export class AuthController {
         }
     }
 
-    showForgotConfirmation(email, localLink) {
+    showForgotConfirmation(email) {
         const forgotForm = this.elements.forgotForm;
         if (!forgotForm) return;
 
@@ -433,30 +401,15 @@ export class AuthController {
         const confirmDiv = document.createElement('div');
         confirmDiv.id = 'forgot-confirmed';
         confirmDiv.className = 'auth-confirm-message';
-
-        if (localLink) {
-            // Development mode - show clickable link
-            confirmDiv.innerHTML = `
-                <div class="confirm-success-content">
-                    <span class="confirm-icon">🔧</span>
-                    <h3>Modo Desarrollo</h3>
-                    <p>Hacé clic en el link para restablecer tu contraseña:</p>
-                    <p><a href="${localLink}" class="btn-primary" style="display:inline-block;padding:12px 24px;margin-top:10px;text-decoration:none;border-radius:8px;">Restablecer Contraseña</a></p>
-                    <p style="font-size:0.8rem;margin-top:0.75rem;word-break:break-all;color:var(--text-light);">${localLink}</p>
-                    <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
-                </div>
-            `;
-        } else {
-            confirmDiv.innerHTML = `
-                <div class="confirm-success-content">
-                    <span class="confirm-icon">📧</span>
-                    <h3>Revisá tu correo</h3>
-                    <p>Te enviamos un link de recuperación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
-                    <p>Hacé clic en el link para restablecer tu contraseña.</p>
-                    <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
-                </div>
-            `;
-        }
+        confirmDiv.innerHTML = `
+            <div class="confirm-success-content">
+                <span class="confirm-icon">📧</span>
+                <h3>Revisá tu correo</h3>
+                <p>Te enviamos un link de recuperación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                <p>Hacé clic en el link para restablecer tu contraseña.</p>
+                <button type="button" id="btn-back-to-login-from-forgot" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+            </div>
+        `;
 
         forgotForm.appendChild(confirmDiv);
 
