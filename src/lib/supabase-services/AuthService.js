@@ -386,8 +386,9 @@ export class AuthService {
             await this.resetTokenRepo.invalidateByEmail(email);
             await this.resetTokenRepo.create(email, token, expiresAt, 'confirm');
 
+            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
             const { error: fnError } = await supabase.functions.invoke('send-email', {
-                body: { email, token, type: 'confirm', userName }
+                body: { email, token, type: 'confirm', userName, publicUrl }
             });
 
             if (fnError) {
@@ -432,8 +433,9 @@ export class AuthService {
             await this.resetTokenRepo.invalidateByEmail(email);
             await this.resetTokenRepo.create(email, token, expiresAt, 'reset');
 
+            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
             const { error: fnError } = await supabase.functions.invoke('send-email', {
-                body: { email, token, type: 'reset' }
+                body: { email, token, type: 'reset', publicUrl }
             });
 
             if (fnError) {
