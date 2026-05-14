@@ -402,23 +402,6 @@ export class AuthService {
         }
     }
 
-            // En producción: llamar a la Edge Function de Supabase
-            const { error: fnError, data: fnData } = await supabase.functions.invoke('send-email', {
-                body: { email, token, type: 'confirm', userName }
-            });
-
-            if (fnError) {
-                console.error('[sendConfirmationEmail] Error:', fnError);
-                return { success: false, error: 'Error al enviar correo de confirmación.' };
-            }
-
-            return { success: true, message: 'Te enviamos un correo de confirmación.' };
-        } catch (error) {
-            console.error('[sendConfirmationEmail] Exception:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
     async confirmEmailWithToken(token) {
         const record = await this.validateResetToken(token, 'confirm');
         if (!record) {
