@@ -431,5 +431,6 @@ export class AuthService {
             nombre: this.currentProfile?.nombre || this.currentUser.email.split('@')[0]
         };
     }
+}
 
 export default AuthService;
