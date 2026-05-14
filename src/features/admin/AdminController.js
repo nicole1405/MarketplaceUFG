@@ -86,8 +86,12 @@ export class AdminController {
             adminProdEstado: document.getElementById('admin-prod-estado'),
             adminProdRevision: document.getElementById('admin-prod-revision'),
             adminProdDescripcion: document.getElementById('admin-prod-descripcion'),
-            adminProdImagen: document.getElementById('admin-prod-imagen'),
+            adminProdImagenes: document.getElementById('admin-prod-imagenes'),
+            adminProdPreviewContainer: document.getElementById('admin-prod-preview-container'),
+            adminProdPreviewImages: document.getElementById('admin-prod-preview-images'),
             adminProductFormTitle: document.getElementById('admin-product-form-title'),
+            adminProdCatSearch: document.getElementById('admin-prod-categoria-search'),
+            adminProdVendSearch: document.getElementById('admin-prod-vendedor-search'),
 
             // General
             adminError: document.getElementById('admin-error')
@@ -99,6 +103,7 @@ export class AdminController {
         this.allCategories = []; // Store all categories for filtering
         this.allProducts = []; // Store all products for admin CRUD
         this.editingProductId = null; // Product being edited
+        this.adminProductImageFiles = null; // Image files for admin product form
     }
 
     bindEvents() {
@@ -204,6 +209,23 @@ export class AdminController {
         // Admin Product Form - Submit
         if (this.elements.adminProductForm) {
             this.elements.adminProductForm.addEventListener('submit', (e) => this.handleAdminProductSubmit(e));
+        }
+
+        // Admin Product - File input for images
+        if (this.elements.adminProdImagenes) {
+            this.elements.adminProdImagenes.addEventListener('change', (e) => this.handleAdminProductImages(e));
+        }
+
+        // Admin Product - Searchable selects
+        if (this.elements.adminProdCatSearch) {
+            this.elements.adminProdCatSearch.addEventListener('input', (e) => {
+                this.filterSelectOptions('admin-prod-categoria', e.target.value);
+            });
+        }
+        if (this.elements.adminProdVendSearch) {
+            this.elements.adminProdVendSearch.addEventListener('input', (e) => {
+                this.filterSelectOptions('admin-prod-vendedor', e.target.value);
+            });
         }
 
         // Close modal on outside click
@@ -427,6 +449,16 @@ export class AdminController {
 
     async openAdminProductModal(productId) {
         this.editingProductId = null;
+        this.adminProductImageFiles = null;
+
+        // Clear image preview
+        if (this.elements.adminProdPreviewContainer) this.elements.adminProdPreviewContainer.style.display = 'none';
+        if (this.elements.adminProdPreviewImages) this.elements.adminProdPreviewImages.innerHTML = '';
+        if (this.elements.adminProdImagenes) this.elements.adminProdImagenes.value = '';
+
+        // Clear search inputs
+        if (this.elements.adminProdCatSearch) this.elements.adminProdCatSearch.value = '';
+        if (this.elements.adminProdVendSearch) this.elements.adminProdVendSearch.value = '';
 
         // Load categories and users for dropdowns
         try {
@@ -437,12 +469,14 @@ export class AdminController {
             if (catSelect) {
                 catSelect.innerHTML = '<option value="">Seleccionar categoría</option>' +
                     cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                this._allCatOptions = cats.map(c => ({ value: c.id, label: c.nombre }));
             }
 
             const vendSelect = this.elements.adminProdVendedor;
             if (vendSelect) {
                 vendSelect.innerHTML = '<option value="">Seleccionar vendedor</option>' +
                     users.map(u => `<option value="${u.user_id}">${UIUtils.escapeHtml(u.nombre)} — ${UIUtils.escapeHtml(u.email)}</option>`).join('');
+                this._allVendOptions = users.map(u => ({ value: u.user_id, label: `${u.nombre} — ${u.email}` }));
             }
 
             if (productId) {
@@ -454,10 +488,6 @@ export class AdminController {
                 if (this.elements.adminProdNombre) this.elements.adminProdNombre.value = product.nombre || '';
                 if (this.elements.adminProdPrecio) this.elements.adminProdPrecio.value = product.precio || '';
                 if (this.elements.adminProdDescripcion) this.elements.adminProdDescripcion.value = product.descripcion || '';
-                if (this.elements.adminProdImagen) {
-                    const img = product.imagenes_urls?.[0] || product.imagen_url || '';
-                    this.elements.adminProdImagen.value = img;
-                }
                 if (catSelect) catSelect.value = product.categoria_id || '';
                 if (vendSelect) vendSelect.value = product.vendedor_id || '';
                 if (this.elements.adminProdEstado) this.elements.adminProdEstado.value = product.estado || 'disponible';
@@ -477,12 +507,104 @@ export class AdminController {
     closeAdminProductModal() {
         if (this.elements.adminProductModal) this.elements.adminProductModal.style.display = 'none';
         this.editingProductId = null;
+        this.adminProductImageFiles = null;
     }
 
     resetAdminProductForm() {
         if (this.elements.adminProductForm) this.elements.adminProductForm.reset();
         if (this.elements.adminProdEstado) this.elements.adminProdEstado.value = 'disponible';
         if (this.elements.adminProdRevision) this.elements.adminProdRevision.value = 'pendiente';
+        this.adminProductImageFiles = null;
+        if (this.elements.adminProdPreviewContainer) this.elements.adminProdPreviewContainer.style.display = 'none';
+        if (this.elements.adminProdPreviewImages) this.elements.adminProdPreviewImages.innerHTML = '';
+        if (this.elements.adminProdImagenes) this.elements.adminProdImagenes.value = '';
+        if (this.elements.adminProdCatSearch) this.elements.adminProdCatSearch.value = '';
+        if (this.elements.adminProdVendSearch) this.elements.adminProdVendSearch.value = '';
+        // Reset selects to show all options
+        this.filterSelectOptions('admin-prod-categoria', '');
+        this.filterSelectOptions('admin-prod-vendedor', '');
+    }
+
+    handleAdminProductImages(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        const maxImages = 5;
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        const maxSizeMB = 5;
+
+        // Validate
+        for (const file of files) {
+            if (!validTypes.includes(file.type)) {
+                toast.error('Solo JPG, PNG, GIF, WebP');
+                event.target.value = '';
+                return;
+            }
+            if (file.size > maxSizeMB * 1024 * 1024) {
+                toast.error(`Cada imagen max ${maxSizeMB}MB`);
+                event.target.value = '';
+                return;
+            }
+        }
+
+        const existing = this.adminProductImageFiles || [];
+        const combined = [...existing, ...files];
+        if (combined.length > maxImages) {
+            toast.error(`Máximo ${maxImages} imágenes. Ya tenés ${existing.length}.`);
+            event.target.value = '';
+            return;
+        }
+
+        this.adminProductImageFiles = combined;
+        event.target.value = '';
+        this.renderAdminProductPreviews(this.adminProductImageFiles);
+    }
+
+    renderAdminProductPreviews(files) {
+        const container = this.elements.adminProdPreviewContainer;
+        const imagesContainer = this.elements.adminProdPreviewImages;
+        if (!container || !imagesContainer) return;
+
+        imagesContainer.innerHTML = '';
+
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-image-wrapper';
+                wrapper.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview ${index + 1}">
+                    <button type="button" class="btn-remove-preview" data-index="${index}">X</button>
+                `;
+                imagesContainer.appendChild(wrapper);
+
+                wrapper.querySelector('.btn-remove-preview').addEventListener('click', () => {
+                    if (this.adminProductImageFiles) {
+                        this.adminProductImageFiles.splice(index, 1);
+                        if (this.adminProductImageFiles.length === 0) {
+                            this.adminProductImageFiles = null;
+                            container.style.display = 'none';
+                            imagesContainer.innerHTML = '';
+                        } else {
+                            this.renderAdminProductPreviews(this.adminProductImageFiles);
+                        }
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        container.style.display = 'block';
+    }
+
+    filterSelectOptions(selectId, searchTerm) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const term = searchTerm.toLowerCase().trim();
+        Array.from(select.options).forEach(opt => {
+            if (!opt.value) return; // keep placeholder
+            opt.style.display = (!term || opt.text.toLowerCase().includes(term)) ? '' : 'none';
+        });
     }
 
     async handleAdminProductSubmit(event) {
@@ -494,11 +616,30 @@ export class AdminController {
         const estado = this.elements.adminProdEstado?.value || 'disponible';
         const revision = this.elements.adminProdRevision?.value || 'pendiente';
         const descripcion = this.elements.adminProdDescripcion?.value?.trim();
-        const imagenUrl = this.elements.adminProdImagen?.value?.trim();
 
         if (!nombre || !precio || !vendedorId) {
             toast.error('Completá los campos obligatorios: nombre, precio y vendedor');
             return;
+        }
+
+        // Upload images if any
+        let imagenesUrls = [];
+        let imagenesPaths = [];
+        if (this.adminProductImageFiles && this.adminProductImageFiles.length > 0) {
+            try {
+                const user = this.adminService.authService.getCurrentUser?.();
+                if (user) {
+                    const result = await window.app.services.storage.uploadImages(
+                        this.adminProductImageFiles,
+                        user.id
+                    );
+                    imagenesUrls = result.urls;
+                    imagenesPaths = result.paths;
+                }
+            } catch (error) {
+                toast.error('Error al subir imágenes: ' + error.message);
+                return;
+            }
         }
 
         const productData = {
@@ -509,8 +650,8 @@ export class AdminController {
             estado,
             estado_revision: revision,
             descripcion,
-            imagenes_urls: imagenUrl ? [imagenUrl] : [],
-            imagenes_paths: []
+            imagenes_urls: imagenesUrls,
+            imagenes_paths: imagenesPaths
         };
 
         try {

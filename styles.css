@@ -2151,6 +2151,68 @@ body.dark-mode .modal-perfil .form-group input:focus {
     }
 }
 
+/* Searchable Select */
+.searchable-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.select-search-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background-color: var(--bg-light);
+    transition: all 0.3s ease;
+}
+
+.select-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: var(--white);
+}
+
+.select-search-target {
+    width: 100%;
+    padding: 0.5rem;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background-color: var(--white);
+    min-height: 100px;
+}
+
+.select-search-target option {
+    padding: 0.4rem 0.5rem;
+}
+
+.select-search-target option:checked {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.select-search-target option[style*="display: none"] {
+    display: none !important;
+}
+
+body.dark-mode .select-search-input {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border);
+}
+
+body.dark-mode .select-search-input:focus {
+    background-color: var(--white);
+}
+
+body.dark-mode .select-search-target {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    border-color: var(--border);
+}
+
 /* Reorder Modal */
 .modal-reorder-content {
     max-width: 600px;

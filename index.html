@@ -930,15 +930,21 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="admin-prod-categoria">Categoría</label>
-                        <select id="admin-prod-categoria">
-                            <option value="">Seleccionar categoría</option>
-                        </select>
+                        <div class="searchable-select">
+                            <input type="text" id="admin-prod-categoria-search" class="select-search-input" placeholder="🔍 Buscar categoría..." autocomplete="off">
+                            <select id="admin-prod-categoria" class="select-search-target" size="5">
+                                <option value="">Seleccionar categoría</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="admin-prod-vendedor">Vendedor *</label>
-                        <select id="admin-prod-vendedor" required>
-                            <option value="">Seleccionar vendedor</option>
-                        </select>
+                        <div class="searchable-select">
+                            <input type="text" id="admin-prod-vendedor-search" class="select-search-input" placeholder="🔍 Buscar vendedor..." autocomplete="off">
+                            <select id="admin-prod-vendedor" class="select-search-target" size="5" required>
+                                <option value="">Seleccionar vendedor</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="form-row">
@@ -961,12 +967,15 @@
                 </div>
                 <div class="form-group">
                     <label for="admin-prod-descripcion">Descripción</label>
-                    <textarea id="admin-prod-descripcion" rows="3" placeholder="Descripción del producto"></textarea>
+                    <textarea id="admin-prod-descripcion" rows="3" placeholder="Descripción del producto">                    </textarea>
                 </div>
                 <div class="form-group">
-                    <label for="admin-prod-imagen">URL de Imagen</label>
-                    <input type="text" id="admin-prod-imagen" placeholder="https://ejemplo.com/imagen.jpg">
-                    <p class="form-hint">Opcional. Usá una URL pública de imagen.</p>
+                    <label for="admin-prod-imagenes">Imágenes (máx. 5)</label>
+                    <input type="file" id="admin-prod-imagenes" accept="image/*" multiple>
+                    <p class="form-hint">Seleccioná hasta 5 imágenes. La primera será la principal.</p>
+                    <div id="admin-prod-preview-container" class="preview-container" style="display: none;">
+                        <div id="admin-prod-preview-images" class="preview-images"></div>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn-primary btn-block">
