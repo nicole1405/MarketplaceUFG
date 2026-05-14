@@ -468,15 +468,13 @@ export class AuthService {
                 return { success: true, localLink: link, message: `Confirmá tu cuenta: ${link}` };
             }
 
-            const response = await fetch(`${publicUrl}/.netlify/functions/send-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, token, type: 'confirm', userName })
+            // En producción: llamar a la Edge Function de Supabase
+            const { error: fnError, data: fnData } = await supabase.functions.invoke('send-email', {
+                body: { email, token, type: 'confirm', userName }
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                console.error('[sendConfirmationEmail] Error:', err);
+            if (fnError) {
+                console.error('[sendConfirmationEmail] Error:', fnError);
                 return { success: false, error: 'Error al enviar correo de confirmación.' };
             }
 
@@ -527,15 +525,12 @@ export class AuthService {
                 return { success: true, localLink: resetUrl, message: `Reset: ${resetUrl}` };
             }
 
-            const response = await fetch(`${publicUrl}/.netlify/functions/send-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, token, type: 'reset' })
+            const { error: fnError } = await supabase.functions.invoke('send-email', {
+                body: { email, token, type: 'reset' }
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                console.error('[requestPasswordReset] Error:', err);
+            if (fnError) {
+                console.error('[requestPasswordReset] Error:', fnError);
                 return { success: false, error: 'Error al enviar el correo.' };
             }
 
