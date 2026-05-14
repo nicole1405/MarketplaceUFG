@@ -127,6 +127,28 @@
                     <a href="#" id="link-back-to-login">← Volver a Iniciar Sesión</a>
                 </p>
             </div>
+
+            <!-- Formulario de Restablecer Contraseña (desde link del correo) -->
+            <div id="reset-form" class="auth-form" style="display: none;">
+                <h2>Nueva Contraseña</h2>
+                <form>
+                    <p class="auth-description">Elegí tu nueva contraseña.</p>
+                    <div class="form-group">
+                        <label for="reset-password">Nueva Contraseña</label>
+                        <input type="password" id="reset-password" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reset-password-confirm">Confirmar Nueva Contraseña</label>
+                        <input type="password" id="reset-password-confirm" placeholder="Repetí la contraseña" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        Actualizar Contraseña
+                    </button>
+                    <p class="auth-switch" style="margin-top: 0.75rem;">
+                        <a href="#" id="link-back-to-login-from-reset">← Volver a Iniciar Sesión</a>
+                    </p>
+                </form>
+            </div>
         </div>
     </div>
 

@@ -7,6 +7,7 @@
 import { supabase } from '../supabase.js';
 import { MESSAGES } from '../../config/messages.js';
 import { CONFIG } from '../../config/config.js';
+import { PasswordResetTokenRepository } from '../supabase-repositories/PasswordResetTokenRepository.js';
 
 export class AuthService {
     constructor(profileRepository, sessionRepository) {
@@ -14,6 +15,7 @@ export class AuthService {
         this.sessionRepository = sessionRepository;
         this.currentUser = null;
         this.currentProfile = null;
+        this.resetTokenRepo = new PasswordResetTokenRepository();
     }
 
     /**
@@ -430,6 +432,106 @@ export class AuthService {
             email: this.currentUser.email,
             nombre: this.currentProfile?.nombre || this.currentUser.email.split('@')[0]
         };
+    }
+
+    // ─── CUSTOM PASSWORD RESET (sin Supabase emails) ─────────────────
+
+    async requestPasswordReset(email) {
+        try {
+            // Generate a random token
+            const token = crypto.randomUUID ? crypto.randomUUID() : 
+                Array.from({ length: 32 }, () => Math.random().toString(36)[2]).join('');
+
+            const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hora
+
+            // Invalidate previous tokens for this email
+            await this.resetTokenRepo.invalidateByEmail(email);
+
+            // Create new token
+            await this.resetTokenRepo.create(email, token, expiresAt);
+
+            // Send email via Netlify Function (Resend)
+            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
+            const response = await fetch(`${publicUrl}/.netlify/functions/send-reset-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                console.error('[requestPasswordReset] Error:', err);
+                return {
+                    success: false,
+                    error: 'Error al enviar el correo. Intenta de nuevo más tarde.'
+                };
+            }
+
+            return {
+                success: true,
+                message: 'Te enviamos un link de recuperación a tu correo.'
+            };
+        } catch (error) {
+            console.error('[requestPasswordReset] Exception:', error);
+            return {
+                success: false,
+                error: 'Error al procesar la solicitud. Intenta de nuevo.'
+            };
+        }
+    }
+
+    async validateResetToken(token) {
+        try {
+            const record = await this.resetTokenRepo.findByToken(token);
+            if (!record) return null;
+            if (record.used) return null;
+            if (new Date(record.expires_at) < new Date()) return null;
+            return record;
+        } catch (error) {
+            console.error('[validateResetToken] Error:', error);
+            return null;
+        }
+    }
+
+    async resetPasswordWithToken(token, newPassword) {
+        try {
+            // Validate token
+            const record = await this.validateResetToken(token);
+            if (!record) {
+                return {
+                    success: false,
+                    error: 'Link inválido o expirado. Solicita un nuevo reset.'
+                };
+            }
+
+            // Update password via RPC function
+            const { data, error } = await supabase.rpc('admin_reset_user_password', {
+                p_email: record.email,
+                p_new_password: newPassword
+            });
+
+            if (error) {
+                console.error('[resetPasswordWithToken] RPC error:', error);
+                return {
+                    success: false,
+                    error: 'Error al restablecer la contraseña. Contacta a un administrador.'
+                };
+            }
+
+            // Mark token as used
+            await this.resetTokenRepo.markAsUsed(record.id);
+
+            return {
+                success: true,
+                message: 'Contraseña actualizada correctamente. Ahora iniciá sesión.'
+            };
+        } catch (error) {
+            console.error('[resetPasswordWithToken] Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
 }
 

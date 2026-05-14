@@ -48,7 +48,12 @@ export class AuthController {
             btnEliminarFoto: document.getElementById('btn-eliminar-foto'),
             perfilPassword: document.getElementById('perfil-password'),
             perfilPasswordConfirm: document.getElementById('perfil-password-confirm'),
-            btnChangePassword: document.getElementById('btn-change-password')
+            btnChangePassword: document.getElementById('btn-change-password'),
+            // Reset password form (custom flow, no Supabase emails)
+            resetForm: document.getElementById('reset-form'),
+            resetPassword: document.getElementById('reset-password'),
+            resetPasswordConfirm: document.getElementById('reset-password-confirm'),
+            linkBackToLoginFromReset: document.getElementById('link-back-to-login-from-reset')
         };
     }
 
@@ -68,6 +73,11 @@ export class AuthController {
 
         if (forgotFormElement) {
             forgotFormElement.addEventListener('submit', (e) => this.handleForgotPassword(e));
+        }
+
+        const resetFormElement = this.elements.resetForm?.querySelector('form');
+        if (resetFormElement) {
+            resetFormElement.addEventListener('submit', (e) => this.handleResetPassword(e));
         }
 
         // Links para cambiar entre formularios
@@ -99,6 +109,13 @@ export class AuthController {
 
         if (backToLoginFromForgot) {
             backToLoginFromForgot.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showLogin();
+            });
+        }
+
+        if (this.elements.linkBackToLoginFromReset) {
+            this.elements.linkBackToLoginFromReset.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showLogin();
             });
@@ -308,16 +325,27 @@ export class AuthController {
     }
 
     async checkSession() {
+        // Check if there's a custom reset token in the URL (#reset-password/TOKEN)
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#reset-password/')) {
+            const token = hash.split('#reset-password/')[1];
+            if (token) {
+                this._pendingResetToken = token;
+                this.showLoginScreen();
+                this.showResetPassword();
+                return false;
+            }
+        }
+
+        // Check if this was a password recovery login (old Supabase flow)
+        const wasRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
+        sessionStorage.removeItem('ufg_recovery_flow');
+
         const hasSession = await this.authService.initialize();
         if (hasSession) {
-            // Check if this was a password recovery login
-            const wasRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
-            sessionStorage.removeItem('ufg_recovery_flow');
-            
             if (wasRecovery) {
                 toast.success('Iniciaste sesión con el link de recuperación. Podés cambiar tu contraseña desde tu perfil.');
             }
-
             this.showApp();
             eventBus.emit(EVENTS.AUTH.SESSION_RESTORED, this.authService.getCurrentUser());
             return true;
@@ -340,9 +368,9 @@ export class AuthController {
             submitBtn.textContent = 'Enviando...';
         }
 
-        const result = await this.authService.resetPasswordForEmail(email);
+        // Usar nuestro propio sistema de reset (sin Supabase emails)
+        const result = await this.authService.requestPasswordReset(email);
         
-        // Re-enable button
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Enviar Link de Recuperación';
@@ -350,9 +378,6 @@ export class AuthController {
         
         if (result.success) {
             this.showForgotConfirmation(email);
-        } else if (result.rateLimited) {
-            // Show rate limit error inline
-            this.showRateLimitError(result.error);
         } else {
             toast.error(result.error);
         }
@@ -459,7 +484,6 @@ export class AuthController {
             this.elements.registerForm.style.display = 'none';
         }
         if (this.elements.forgotForm) {
-            // Reset the form view (remove confirmation message if any)
             const formEl = this.elements.forgotForm.querySelector('form');
             const switchLink = this.elements.forgotForm.querySelector('.auth-switch');
             if (formEl) formEl.style.display = '';
@@ -468,6 +492,56 @@ export class AuthController {
             if (existing) existing.remove();
             
             this.elements.forgotForm.style.display = 'block';
+        }
+        if (this.elements.resetForm) {
+            this.elements.resetForm.style.display = 'none';
+        }
+    }
+
+    showResetPassword() {
+        if (this.elements.loginForm) this.elements.loginForm.style.display = 'none';
+        if (this.elements.registerForm) this.elements.registerForm.style.display = 'none';
+        if (this.elements.forgotForm) this.elements.forgotForm.style.display = 'none';
+        if (this.elements.resetForm) this.elements.resetForm.style.display = 'block';
+    }
+
+    async handleResetPassword(event) {
+        event.preventDefault();
+        
+        const password = this.elements.resetPassword?.value;
+        const confirm = this.elements.resetPasswordConfirm?.value;
+
+        if (!password || password.length < 6) {
+            toast.error('La contraseña debe tener al menos 6 caracteres');
+            return;
+        }
+
+        if (password !== confirm) {
+            toast.error('Las contraseñas no coinciden');
+            return;
+        }
+
+        if (!this._pendingResetToken) {
+            toast.error('Token de reset inválido. Solicita un nuevo correo.');
+            return;
+        }
+
+        const btn = event.target.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.textContent = 'Actualizando...'; }
+
+        const result = await this.authService.resetPasswordWithToken(this._pendingResetToken, password);
+        
+        if (btn) { btn.disabled = false; btn.textContent = 'Actualizar Contraseña'; }
+
+        if (result.success) {
+            toast.success(result.message);
+            this._pendingResetToken = null;
+            this.showLogin();
+            if (this.elements.resetForm?.querySelector('form')) {
+                this.elements.resetForm.querySelector('form').reset();
+            }
+        } else {
+            toast.error(result.error);
         }
     }
 
