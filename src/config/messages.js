@@ -16,7 +16,6 @@ export const MESSAGES = {
         REQUIRED_LOGIN: 'Debes iniciar sesion para realizar esta accion',
         RESEND_CONFIRMATION_SUCCESS: 'Correo de confirmacion reenviado. Revisa tu bandeja de entrada.',
         RESEND_CONFIRMATION_ERROR: 'Error al reenviar el correo. Intenta de nuevo mas tarde.',
-        RESEND_CONFIRMATION_RATE_LIMIT: 'Esperá un momento antes de solicitar otro correo. Supabase limita los envios para evitar spam.',
         FORGOT_PASSWORD_SUCCESS: 'Te enviamos un link de recuperacion. Revisa tu correo.',
         FORGOT_PASSWORD_ERROR: 'Error al enviar el correo de recuperacion. Verifica que el correo sea correcto.',
         FORGOT_PASSWORD_RATE_LIMIT: 'Esperá un momento antes de solicitar otro correo. Supabase limita los envios para evitar spam.',

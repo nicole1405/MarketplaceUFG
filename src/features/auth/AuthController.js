@@ -213,7 +213,7 @@ export class AuthController {
             resendBtn.addEventListener('click', async () => {
                 resendBtn.disabled = true;
                 resendBtn.textContent = 'Enviando...';
-                const result = await this.authService.resendConfirmation(email);
+                const result = await this.authService.sendConfirmationEmail(email);
                 const status = document.getElementById('resend-status');
                 if (status) {
                     status.style.display = 'block';
@@ -348,15 +348,8 @@ export class AuthController {
             }
         }
 
-        // Check if this was a password recovery login (old Supabase flow)
-        const wasRecovery = sessionStorage.getItem('ufg_recovery_flow') === 'true';
-        sessionStorage.removeItem('ufg_recovery_flow');
-
         const hasSession = await this.authService.initialize();
         if (hasSession) {
-            if (wasRecovery) {
-                toast.success('Iniciaste sesión con el link de recuperación. Podés cambiar tu contraseña desde tu perfil.');
-            }
             this.showApp();
             eventBus.emit(EVENTS.AUTH.SESSION_RESTORED, this.authService.getCurrentUser());
             return true;
