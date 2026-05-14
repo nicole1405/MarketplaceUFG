@@ -48,8 +48,7 @@ export class AuthService {
                 email,
                 password,
                 options: {
-                    data: { nombre },
-                    emailRedirectTo: this.getRedirectUrl()
+                    data: { nombre }
                 }
             });
 
@@ -66,21 +65,20 @@ export class AuthService {
                 };
             }
 
-            const needsConfirmation = !data.user?.email_confirmed_at;
-
-            if (needsConfirmation) {
-                return {
-                    success: true,
-                    needsConfirmation: true,
-                    message: MESSAGES.AUTH.REGISTER_NEEDS_CONFIRMATION,
-                    user: data.user
-                };
+            // Set email_verified = false in profiles (our custom confirmation)
+            try {
+                await this.profileRepository.updateByUserId(data.user.id, {
+                    email_verified: false
+                });
+            } catch (e) {
+                // Profile might not exist yet (trigger hasn't run), that's ok
+                console.warn('[register] Could not set email_verified:', e.message);
             }
 
             return {
                 success: true,
-                needsConfirmation: false,
-                message: MESSAGES.AUTH.REGISTER_SUCCESS,
+                needsConfirmation: true,
+                message: MESSAGES.AUTH.REGISTER_NEEDS_CONFIRMATION,
                 user: data.user
             };
         } catch (error) {
@@ -117,6 +115,21 @@ export class AuthService {
 
             this.currentUser = data.user;
             this.currentProfile = await this.profileRepository.getByUserId(data.user.id);
+
+            // Check if email is verified (our custom system)
+            if (this.currentProfile && this.currentProfile.email_verified === false) {
+                // Logout and tell user to confirm email
+                await this.sessionRepository.signOut();
+                this.currentUser = null;
+                this.currentProfile = null;
+                return {
+                    success: false,
+                    needsConfirmation: true,
+                    error: MESSAGES.AUTH.LOGIN_EMAIL_NOT_CONFIRMED,
+                    email: email
+                };
+            }
+
             this.sessionRepository.save(data.user);
 
             return {
@@ -434,73 +447,111 @@ export class AuthService {
         };
     }
 
-    // ─── CUSTOM PASSWORD RESET (sin Supabase emails) ─────────────────
+    // ─── CUSTOM EMAIL FLOW (sin Supabase emails) ─────────────────
 
-    async requestPasswordReset(email) {
+    async sendConfirmationEmail(email, userName) {
         try {
-            // Generate a random token
             const token = crypto.randomUUID ? crypto.randomUUID() : 
                 Array.from({ length: 32 }, () => Math.random().toString(36)[2]).join('');
+            const expiresAt = new Date(Date.now() + 3600000).toISOString();
 
-            const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hora
-
-            // Invalidate previous tokens for this email
             await this.resetTokenRepo.invalidateByEmail(email);
+            await this.resetTokenRepo.create(email, token, expiresAt, 'confirm');
 
-            // Create new token
-            await this.resetTokenRepo.create(email, token, expiresAt);
-
+            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
             const isLocal = typeof window !== 'undefined' && 
                 (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
 
             if (isLocal) {
-                // In local dev: show the reset link directly
-                const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-                const resetUrl = `${publicUrl}/#reset-password/${token}`;
-                console.log('[Password Reset] Link:', resetUrl);
-                // Show in UI as well
-                return {
-                    success: true,
-                    localLink: resetUrl,
-                    message: `Modo desarrollo: usá este link para resetear:\n${resetUrl}`
-                };
+                const link = `${publicUrl}/#confirm-email/${token}`;
+                console.log('[Confirm Email] Link:', link);
+                return { success: true, localLink: link, message: `Confirmá tu cuenta: ${link}` };
             }
 
-            // In production: send email via Netlify Function (Resend)
-            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
-            const response = await fetch(`${publicUrl}/.netlify/functions/send-reset-email`, {
+            const response = await fetch(`${publicUrl}/.netlify/functions/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, token })
+                body: JSON.stringify({ email, token, type: 'confirm', userName })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                console.error('[sendConfirmationEmail] Error:', err);
+                return { success: false, error: 'Error al enviar correo de confirmación.' };
+            }
+
+            return { success: true, message: 'Te enviamos un correo de confirmación.' };
+        } catch (error) {
+            console.error('[sendConfirmationEmail] Exception:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async confirmEmailWithToken(token) {
+        const record = await this.validateResetToken(token, 'confirm');
+        if (!record) {
+            return { success: false, error: 'Link inválido o expirado.' };
+        }
+
+        try {
+            const { data, error } = await supabase.rpc('verify_user_email', {
+                p_email: record.email
+            });
+
+            if (error) throw error;
+
+            await this.resetTokenRepo.markAsUsed(record.id);
+            return { success: true, message: 'Email confirmado correctamente. Ahora podés iniciar sesión.' };
+        } catch (error) {
+            console.error('[confirmEmailWithToken] Error:', error);
+            return { success: false, error: 'Error al confirmar email.' };
+        }
+    }
+
+    async requestPasswordReset(email) {
+        try {
+            const token = crypto.randomUUID ? crypto.randomUUID() : 
+                Array.from({ length: 32 }, () => Math.random().toString(36)[2]).join('');
+            const expiresAt = new Date(Date.now() + 3600000).toISOString();
+
+            await this.resetTokenRepo.invalidateByEmail(email);
+            await this.resetTokenRepo.create(email, token, expiresAt, 'reset');
+
+            const publicUrl = CONFIG.APP.PUBLIC_URL || window.location.origin;
+            const isLocal = typeof window !== 'undefined' && 
+                (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
+            if (isLocal) {
+                const resetUrl = `${publicUrl}/#reset-password/${token}`;
+                console.log('[Password Reset] Link:', resetUrl);
+                return { success: true, localLink: resetUrl, message: `Reset: ${resetUrl}` };
+            }
+
+            const response = await fetch(`${publicUrl}/.netlify/functions/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token, type: 'reset' })
             });
 
             if (!response.ok) {
                 const err = await response.json();
                 console.error('[requestPasswordReset] Error:', err);
-                return {
-                    success: false,
-                    error: 'Error al enviar el correo. Intenta de nuevo más tarde.'
-                };
+                return { success: false, error: 'Error al enviar el correo.' };
             }
 
-            return {
-                success: true,
-                message: 'Te enviamos un link de recuperación a tu correo.'
-            };
+            return { success: true, message: 'Te enviamos un link de recuperación a tu correo.' };
         } catch (error) {
             console.error('[requestPasswordReset] Exception:', error);
-            return {
-                success: false,
-                error: 'Error al procesar la solicitud. Intenta de nuevo.'
-            };
+            return { success: false, error: 'Error al procesar la solicitud.' };
         }
     }
 
-    async validateResetToken(token) {
+    async validateResetToken(token, type = 'reset') {
         try {
             const record = await this.resetTokenRepo.findByToken(token);
             if (!record) return null;
             if (record.used) return null;
+            if (record.type !== type) return null;
             if (new Date(record.expires_at) < new Date()) return null;
             return record;
         } catch (error) {

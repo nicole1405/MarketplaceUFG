@@ -250,11 +250,18 @@ export class AuthController {
         });
 
         if (result.success) {
-            if (result.needsConfirmation) {
-                // Show confirmation message on the register form
-                this.showRegistrationConfirmation(email);
+            // Send confirmation email via Resend
+            const emailResult = await this.authService.sendConfirmationEmail(email, nombre);
+            
+            if (emailResult.success) {
+                if (emailResult.localLink) {
+                    this.showRegistrationConfirmation(email, emailResult.localLink);
+                } else {
+                    this.showRegistrationConfirmation(email);
+                }
             } else {
-                toast.success(result.message);
+                // Registration worked but email failed
+                toast.error('Cuenta creada pero no se pudo enviar el correo de confirmación.');
                 this.showLogin();
                 this.clearRegisterForm();
             }
@@ -263,50 +270,52 @@ export class AuthController {
         }
     }
 
-    showRegistrationConfirmation(email) {
+    showRegistrationConfirmation(email, localLink) {
         const registerForm = this.elements.registerForm;
         if (!registerForm) return;
 
-        // Hide the form, show confirmation message
         const formElement = registerForm.querySelector('form');
         const switchLink = registerForm.querySelector('.auth-switch');
         
         if (formElement) formElement.style.display = 'none';
         if (switchLink) switchLink.style.display = 'none';
 
-        // Remove existing confirmation if any
         const existing = document.getElementById('registration-confirmed');
         if (existing) existing.remove();
 
         const confirmDiv = document.createElement('div');
         confirmDiv.id = 'registration-confirmed';
         confirmDiv.className = 'auth-confirm-message';
-        confirmDiv.innerHTML = `
-            <div class="confirm-success-content">
-                <span class="confirm-icon">📧</span>
-                <h3>Revisa tu correo</h3>
-                <p>Te enviamos un link de confirmacion a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
-                <p>Hace clic en el link para activar tu cuenta y despues inicia sesion.</p>
-                <div class="confirm-actions">
-                    <button type="button" id="btn-resend-register" class="btn-link">Reenviar correo</button>
-                    <span id="resend-register-status" style="display:none; color: var(--success); font-size: 0.85rem;"></span>
+
+        if (localLink) {
+            confirmDiv.innerHTML = `
+                <div class="confirm-success-content">
+                    <span class="confirm-icon">🔧</span>
+                    <h3>Modo Desarrollo</h3>
+                    <p>Hacé clic para confirmar tu cuenta:</p>
+                    <p><a href="${localLink}" class="btn-primary" style="display:inline-block;padding:12px 24px;margin-top:10px;text-decoration:none;border-radius:8px;">Confirmar mi cuenta</a></p>
+                    <p style="font-size:0.8rem;margin-top:0.75rem;word-break:break-all;color:var(--text-light);">${localLink}</p>
+                    <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
                 </div>
-                <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesion</button>
-            </div>
-        `;
+            `;
+        } else {
+            confirmDiv.innerHTML = `
+                <div class="confirm-success-content">
+                    <span class="confirm-icon">📧</span>
+                    <h3>Revisá tu correo</h3>
+                    <p>Te enviamos un link de confirmación a <strong>${UIUtils.escapeHtml(email)}</strong>.</p>
+                    <p>Hacé clic en el link para activar tu cuenta y después iniciá sesión.</p>
+                    <button type="button" id="btn-back-to-login" class="btn-primary" style="margin-top: 1rem;">Volver a Iniciar Sesión</button>
+                </div>
+            `;
+        }
 
         registerForm.appendChild(confirmDiv);
 
         document.getElementById('btn-back-to-login')?.addEventListener('click', () => {
             this.showLogin();
         });
-
-        document.getElementById('btn-resend-register')?.addEventListener('click', async () => {
-            const btn = document.getElementById('btn-resend-register');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Enviando...';
-            }
+    }
             const result = await this.authService.resendConfirmation(email);
             const status = document.getElementById('resend-register-status');
             if (status) {
@@ -325,9 +334,26 @@ export class AuthController {
     }
 
     async checkSession() {
-        // Check if there's a custom reset token in the URL (#reset-password/TOKEN)
         const hash = window.location.hash;
-        if (hash && hash.startsWith('#reset-password/')) {
+
+        // Custom email confirmation link
+        if (hash && hash.startsWith('#confirm-email/')) {
+            const token = hash.split('#confirm-email/')[1];
+            if (token) {
+                const result = await this.authService.confirmEmailWithToken(token);
+                if (result.success) {
+                    toast.success(result.message);
+                } else {
+                    toast.error(result.error);
+                }
+                // Clean the hash and show login
+                window.location.hash = '';
+                this.showLoginScreen();
+                return false;
+            }
+        }
+
+        // Custom password reset link
             const token = hash.split('#reset-password/')[1];
             if (token) {
                 this._pendingResetToken = token;

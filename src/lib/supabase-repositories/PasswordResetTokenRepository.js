@@ -10,13 +10,14 @@ export class PasswordResetTokenRepository {
         this.table = 'password_reset_tokens';
     }
 
-    async create(email, token, expiresAt) {
+    async create(email, token, expiresAt, type = 'reset') {
         const { data, error } = await supabase
             .from(this.table)
             .insert({
                 email,
                 token,
-                expires_at: expiresAt
+                expires_at: expiresAt,
+                type
             })
             .select()
             .single();
