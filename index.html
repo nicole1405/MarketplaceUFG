@@ -991,7 +991,7 @@
 </div>
     <!-- Scripts -->
     <script>
-        if (window.location.hash && window.location.hash.includes('type=recovery')) {
+        if (window.location.hash && window.location.hash.includes('type=recovery') && !window.location.hash.includes('error=')) {
             sessionStorage.setItem('ufg_recovery_flow', 'true');
         }
     </script>

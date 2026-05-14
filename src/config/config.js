@@ -17,7 +17,7 @@ export const CONFIG = {
          * 
          * Si se deja vacío, usa automáticamente window.location.origin
          */
-        PUBLIC_URL: ''
+        PUBLIC_URL: 'https://marketplace-ufg.netlify.app'
     },
     
     SUPABASE: {
