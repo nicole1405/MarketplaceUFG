@@ -195,7 +195,7 @@ describe('AdminController - Unit Tests', () => {
             expect(list.innerHTML).toContain('rol-badge-anunciante');
         });
 
-        it('debe mostrar boton de cambio de rol correcto segun rol actual', async () => {
+        it('debe mostrar selector de roles y boton guardar', async () => {
             const users = [
                 { user_id: 'user-1', nombre: 'Admin', email: 'admin@test.com', rol: 'admin' },
                 { user_id: 'user-2', nombre: 'Seller', email: 'seller@test.com', rol: 'anunciante' }
@@ -207,8 +207,11 @@ describe('AdminController - Unit Tests', () => {
             await controller.loadUsers();
 
             const list = document.getElementById('admin-users-list');
-            expect(list.innerHTML).toContain('Cambiar a Anunciante');
-            expect(list.innerHTML).toContain('Ascender a Moderador');
+            expect(list.innerHTML).toContain('role-select');
+            expect(list.innerHTML).toContain('btn-change-role');
+            expect(list.innerHTML).toContain('Guardar');
+            expect(list.innerHTML).toContain('Admin');
+            expect(list.innerHTML).toContain('Seller');
         });
     });
 
@@ -337,7 +340,7 @@ describe('AdminController - Unit Tests', () => {
     });
 
     describe('handleChangeRole', () => {
-        it('debe cambiar rol de anunciante a admin', async () => {
+        it('debe cambiar rol de anunciante a moderador', async () => {
             mockAdminService.changeUserRole.mockResolvedValue({
                 success: true,
                 message: 'Rol actualizado'
@@ -348,7 +351,7 @@ describe('AdminController - Unit Tests', () => {
             global.confirm = vi.fn().mockReturnValue(true);
 
             const controller = new AdminController(mockAdminService, mockEventBus);
-            await controller.handleChangeRole('user-1', 'anunciante');
+            await controller.handleChangeRole('user-1', 'anunciante', 'moderador');
 
             expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'moderador');
             expect(mockToast.success).toHaveBeenCalled();
@@ -364,7 +367,7 @@ describe('AdminController - Unit Tests', () => {
             global.confirm = vi.fn().mockReturnValue(true);
 
             const controller = new AdminController(mockAdminService, mockEventBus);
-            await controller.handleChangeRole('user-1', 'admin');
+            await controller.handleChangeRole('user-1', 'admin', 'anunciante');
 
             expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'anunciante');
         });
@@ -373,7 +376,7 @@ describe('AdminController - Unit Tests', () => {
             global.confirm = vi.fn().mockReturnValue(false);
 
             const controller = new AdminController(mockAdminService, mockEventBus);
-            await controller.handleChangeRole('user-1', 'anunciante');
+            await controller.handleChangeRole('user-1', 'anunciante', 'moderador');
 
             expect(mockAdminService.changeUserRole).not.toHaveBeenCalled();
         });

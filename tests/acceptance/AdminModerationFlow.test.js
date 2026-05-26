@@ -314,7 +314,7 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             expect(list.innerHTML).toContain('rol-badge-anunciante');
         });
 
-        it('debe promover anunciante a admin', async () => {
+        it('debe promover anunciante a moderador', async () => {
             mockAdminService.changeUserRole.mockResolvedValue({
                 success: true,
                 message: 'Rol actualizado'
@@ -323,7 +323,7 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             mockAdminService.getAllUsers.mockResolvedValue([]);
 
             const controller = new AdminController(mockAdminService, mockEventBus);
-            await controller.handleChangeRole('user-2', 'anunciante');
+            await controller.handleChangeRole('user-2', 'anunciante', 'moderador');
 
             expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-2', 'moderador');
             expect(mockToast.success).toHaveBeenCalled();
@@ -338,7 +338,7 @@ describe('Moderación de Admin - Pruebas de Aceptación', () => {
             mockAdminService.getAllUsers.mockResolvedValue([]);
 
             const controller = new AdminController(mockAdminService, mockEventBus);
-            await controller.handleChangeRole('user-1', 'admin');
+            await controller.handleChangeRole('user-1', 'admin', 'anunciante');
 
             expect(mockAdminService.changeUserRole).toHaveBeenCalledWith('user-1', 'anunciante');
         });

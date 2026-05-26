@@ -17,7 +17,7 @@ const mockAuthService = {
     requireAdmin: vi.fn(),
     updateUserRole: vi.fn(),
     isModerador: vi.fn(),
-    sendConfirmationEmail: vi.fn().mockResolvedValue({ success: true })
+    updateProfile: vi.fn()
 };
 
 const mockStorageService = {
