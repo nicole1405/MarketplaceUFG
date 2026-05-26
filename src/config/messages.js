@@ -12,8 +12,8 @@ export const MESSAGES = {
         PASSWORD_MISMATCH: 'Las contrasenas no coinciden',
         LOGOUT_SUCCESS: 'Sesion cerrada',
         REQUIRED_LOGIN: 'Debes iniciar sesion para realizar esta accion',
-        RESET_PASSWORD_SUCCESS: 'Contrasena actualizada exitosamente. Ahora podes iniciar sesion.',
-        RESET_PASSWORD_ERROR: 'Error al actualizar la contrasena. El link puede haber expirado.'
+        RESET_PASSWORD_SUCCESS: 'Contrasena actualizada exitosamente.',
+        RESET_PASSWORD_ERROR: 'Error al actualizar la contrasena.'
     },
     
     PRODUCTS: {

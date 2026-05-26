@@ -54,7 +54,7 @@ export class CategoryService {
     }
 
     async update(id, data) {
-        this.authService.requireAdmin();
+        this.authService.requireModerador();
 
         try {
             const updateData = {
