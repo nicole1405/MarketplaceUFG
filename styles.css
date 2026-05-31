@@ -622,8 +622,9 @@ body.dark-mode .confirm-success-content p {
 }
 
 .tagline {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     opacity: 0.85;
+    font-weight: 700;
 }
 
 .nav {
