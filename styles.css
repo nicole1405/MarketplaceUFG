@@ -88,6 +88,14 @@ body {
     opacity: 0.9;
 }
 
+.auth-logo {
+    width: 260px;
+    height: 260px;
+    object-fit: contain;
+    margin-bottom: 0.75rem;
+    filter: brightness(0) invert(1);
+}
+
 .auth-form {
     padding: 2rem;
 }
